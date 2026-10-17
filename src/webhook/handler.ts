@@ -13,6 +13,7 @@ import {
   type StoredMedia,
 } from "../engine/types.ts";
 import { hashPhone, last4 } from "../lib/privacy.ts";
+import { toGsm7 } from "../messaging/sms.ts";
 import { verifyTwilioSignature } from "../messaging/twilioSignature.ts";
 import type { MessagingProvider, ParsedInbound, ProviderMedia } from "../messaging/types.ts";
 import type { MessageLogRow, Store } from "./store.ts";
@@ -153,7 +154,10 @@ export function createInboundProcessor(deps: ProcessorDeps): (parsed: ParsedInbo
         await store.updateReporter(reporter.id, result.reporterUpdate);
       }
 
-      const outbound = result.outboundMessages.map((m) => (refCode ? m.text.replaceAll(REF_CODE_TOKEN, refCode) : m.text));
+      const outbound = result.outboundMessages.map((m) => {
+        const text = refCode ? m.text.replaceAll(REF_CODE_TOKEN, refCode) : m.text;
+        return parsed.channel === "sms" ? toGsm7(text) : text;
+      });
       const logRows: MessageLogRow[] = [
         { reporterId: reporter.id, direction: "inbound", body: inboundLogBody(parsed) },
         ...outbound.map((body) => ({ reporterId: reporter.id, direction: "outbound" as const, body })),
@@ -165,7 +169,8 @@ export function createInboundProcessor(deps: ProcessorDeps): (parsed: ParsedInbo
         messageSid: parsed.messageSid,
         error: err instanceof Error ? err.message : String(err),
       });
-      return [language ? t("error_generic", language) : bilingual("error_generic")];
+      const error = language ? t("error_generic", language) : bilingual("error_generic");
+      return [parsed.channel === "sms" ? toGsm7(error) : error];
     }
   };
 }
