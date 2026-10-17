@@ -153,14 +153,45 @@
   --sidebar-accent-foreground: var(--primary);
   --shadow-soft: 0 2px 4px oklch(0.25 0.01 165 / 0.025);
 }
+.dark {
+  --background: oklch(0.2 0.045 255);
+  --foreground: oklch(0.96 0.005 250);
+  --card: oklch(0.25 0.05 256);
+  --card-foreground: oklch(0.96 0.005 250);
+  --popover: oklch(0.25 0.05 256);
+  --popover-foreground: oklch(0.96 0.005 250);
+  --primary: oklch(0.68 0.12 169);
+  --primary-foreground: oklch(0.18 0.04 256);
+  --secondary: oklch(0.83 0.157 81);
+  --secondary-foreground: oklch(0.2 0.045 255);
+  --muted: oklch(0.29 0.045 256);
+  --muted-foreground: oklch(0.75 0.02 250);
+  --accent: oklch(0.32 0.06 190);
+  --accent-foreground: oklch(0.9 0.05 169);
+  --destructive: oklch(0.66 0.2 23);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 18%);
+  --ring: oklch(0.68 0.12 169);
+  --sidebar: oklch(0.23 0.05 256);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--primary);
+  --sidebar-border: oklch(1 0 0 / 12%);
+  --warning-ink: oklch(0.83 0.14 81);
+  --info: oklch(0.72 0.1 250);
+  --shadow-soft: 0 2px 4px oklch(0 0 0 / 0.25);
+}
+/* Brand guide: Superline (primary, headings) and Arial (secondary, body).
+   Superline renders when installed or its web-font file is supplied; Arial is the fallback. */
 @theme inline {
   --color-warn: var(--warn);
   --color-warning-ink: var(--warning-ink);
   --color-info: var(--info);
   --font-sans: Arial, Helvetica, sans-serif;
-  --font-display: Arial, Helvetica, sans-serif;
+  --font-display: "Superline", Arial, Helvetica, sans-serif;
 }
 body { font-family: var(--font-sans); letter-spacing: 0; }
+h1, h2, .font-display { font-family: var(--font-display); }
 .ops-panel { border: 1px solid var(--border); border-radius: 8px; background: var(--card); box-shadow: var(--shadow-soft); }
 .ops-input { border: 1px solid var(--input); border-radius: 6px; background: var(--card); padding: 8px 10px; font-size: 13px; min-width: 0; }
 .ops-input:focus { outline: 2px solid var(--primary); outline-offset: 2px; }
