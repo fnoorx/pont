@@ -7,7 +7,7 @@ import { useOperations } from './OperationsProvider';
 import { ThemeToggle } from '@/components/ThemeToggle';
 const links=[{to:'/dashboard',label:'Overview',icon:LayoutDashboard},{to:'/partner-reports',label:'Partner Reports',icon:MessageSquareText},{to:'/needs',label:'Needs & Priorities',icon:Layers3},{to:'/projects',label:'Projects & Deployment',icon:FolderKanban},{to:'/impact',label:'Impact & Reports',icon:ChartNoAxesCombined}] as const;
 export function OperationsShell({children}:{children:ReactNode}){
- const [compact,setCompact]=useState(false);const [mobile,setMobile]=useState(false);const [notifications,setNotifications]=useState(false);const [help,setHelp]=useState(false);
+ const [compact,setCompact]=useState(false);const [mobile,setMobile]=useState(false);const [hidden,setHidden]=useState(false);const [notifications,setNotifications]=useState(false);const [help,setHelp]=useState(false);
  const {search,setSearch,notice,setNotice,reports,projects,audit}=useOperations();
  const results=search.trim()? [...reports.map(r=>({id:r.id,title:r.school,kind:'Report',to:'/partner-reports' as const})),...projects.map(p=>({id:p.id,title:p.name,kind:'Project',to:'/projects' as const}))].filter(r=>`${r.id} ${r.title}`.toLowerCase().includes(search.toLowerCase())).slice(0,6):[];
  return <div className="min-h-screen bg-background text-foreground">
