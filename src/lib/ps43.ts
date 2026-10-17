@@ -1,8 +1,25 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-export const SUPABASE_URL = "https://pfniphvzvgmmghejwadl.supabase.co";
+/**
+ * Database connection.
+ *
+ * When the project runs outside Lovable (e.g. cloned from GitHub and deployed
+ * elsewhere), set these environment variables at build time — see .env.example:
+ *   VITE_SUPABASE_URL       e.g. https://pfniphvzvgmmghejwadl.supabase.co
+ *   VITE_SUPABASE_ANON_KEY  the anon/public key from API settings
+ * The literals below are the same values as fallbacks so the app also runs
+ * without configuration. They are publishable credentials only; no service
+ * role key or other secret may ever be placed here.
+ */
+export const SUPABASE_URL =
+  import.meta.env.VITE_SUPABASE_URL ?? "https://pfniphvzvgmmghejwadl.supabase.co";
 export const SUPABASE_ANON_KEY =
+  import.meta.env.VITE_SUPABASE_ANON_KEY ??
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBmbmlwaHZ6dmdtbWdoZWp3YWRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIyNTY0MTMsImV4cCI6MjEwNzgzMjQxM30.fRcCvpvsPf4HVsLoSDagc7jNx09ASWSnTv9niPx0o6w";
+
+if (import.meta.env.DEV && (!SUPABASE_URL || !SUPABASE_ANON_KEY)) {
+  console.warn("ps43: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are not set; staff sign-in will fail.");
+}
 
 let client: SupabaseClient | undefined;
 export function db(): SupabaseClient {
