@@ -9,7 +9,7 @@ import {
 const SchoolMap = lazy(() => import("@/components/SchoolMap"));
 const REFRESH = 10_000;
 
-export const Route = createFileRoute("/dashboard")({
+export const Route = createFileRoute("/live-schools")({
   ssr: false,
   head: () => ({
     meta: [
