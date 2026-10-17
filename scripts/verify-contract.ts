@@ -26,6 +26,7 @@ const VIEW_COLUMNS: Record<string, string[]> = {
   dashboard_readiness: [
     "school_id", "school_name", "region_code", "region_name", "is_sensitive", "latest_assessment_id",
     "building_points", "power_points", "connectivity_points", "devices_points", "score", "tier", "safety_first",
+    "tier_capped", "stated_need", "blocked_by", "recommended_need", "package",
   ],
   dashboard_partners: [
     "id", "name", "type", "region_code", "region_name", "town", "services", "trust_level", "projects_completed",
@@ -33,7 +34,7 @@ const VIEW_COLUMNS: Record<string, string[]> = {
   ],
   dashboard_partner_matches: [
     "school_id", "partner_id", "partner_name", "partner_type", "trust_level", "projects_completed", "same_region",
-    "need", "match_rank",
+    "need", "match_rank", "covers", "covers_full_package",
   ],
   dashboard_projects: [
     "id", "school_id", "school_name", "region_code", "region_name", "is_sensitive", "partner_id", "partner_name",
@@ -45,6 +46,11 @@ const VIEW_COLUMNS: Record<string, string[]> = {
   ],
   dashboard_attendance: [
     "school_id", "school_name", "region_code", "week_start", "students_present", "students_enrolled", "attendance_rate",
+  ],
+  dashboard_priority: [
+    "school_id", "school_name", "region_code", "region_name", "is_sensitive", "readiness_score", "tier", "stated_need",
+    "recommended_need", "blocked_by", "enrollment_band", "verified", "need_points", "safety_points", "size_points",
+    "verified_points", "priority", "priority_rank",
   ],
   dashboard_impact_summary: [
     "school_count", "assessment_count", "verified_count", "partner_count", "proven_partner_count", "projects_planned",
@@ -130,6 +136,16 @@ async function checkStaff(): Promise<void> {
   const { data: regions } = await staff.from("dashboard_region_stats").select("region_code");
   if (regions?.length === 10) record("PASS", "dashboard_region_stats has all 10 regions");
   else record("FAIL", "dashboard_region_stats has all 10 regions", `got ${regions?.length ?? 0}`);
+
+  // Readiness rules: no Tier 2 without reliable power (no power = 0 points, unreliable grid = 10).
+  const { data: capped, error: capError } = await staff
+    .from("dashboard_readiness")
+    .select("school_name")
+    .eq("tier", "tier2")
+    .in("power_points", [0, 10]);
+  if (capError) record("FAIL", "readiness tier cap", capError.message);
+  else if (capped.length) record("FAIL", "readiness tier cap", `${capped.length} Tier 2 schools without reliable power`);
+  else record("PASS", "no Tier 2 school without reliable power");
 
   // Raw tables are denied.
   for (const table of RAW_TABLES) {

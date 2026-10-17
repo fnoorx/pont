@@ -321,15 +321,27 @@ Views run with owner privileges so they can read the raw tables. The Supabase li
 - `connectivity_points` (good 20, weak 10, none 0)
 - `devices_points` (enough 20, few 10, none 0)
 - `score` (0 to 100)
-- `tier`: `tier0` if the building is unsafe or score < 40, `tier1` if score < 70, else `tier2`
+- `tier`: `tier0` if the building is unsafe or score < 40, `tier1` if score < 70, else `tier2`. Capped at `tier1` when power is `none` or `grid_unreliable`.
 - `safety_first` (true when an unsafe building forced `tier0`)
+- `tier_capped` (true when weak power lowered Tier 2 to Tier 1)
+- `stated_need` (the school's latest `top_need`)
+- `blocked_by` (`building`, `power`, `devices`, `signal` or NULL): the first missing prerequisite for the stated need
+- `recommended_need`: what to fund first (a `top_need` value)
+- `package` (text[]): everything to fund, in order, to meet the stated need
+
+Dependency rules (infrastructure is a chain: safe building → power → devices → internet): furniture and power need a safe building; computers need a safe building, then power (not `none` or `grid_unreliable`); internet needs all of that plus devices, and no mobile signal is flagged as `signal`. Building, supplies, training and other have no prerequisites.
 
 **`dashboard_partners`** (C)
 - `id`, `name`, `type`, `region_code`, `region_name`, `town`, `services`, `trust_level`, `projects_completed`, `referred_by_id`, `referred_by_name`, `joined_at`
 
 **`dashboard_partner_matches`** (C, up to 3 per school, live)
-- `school_id`, `partner_id`, `partner_name`, `partner_type`, `trust_level`, `projects_completed`, `same_region`, `need`, `match_rank`
-- Rule: partners offering the school's latest `top_need`, same region first, then nationwide, ranked by trust then delivery record.
+- `school_id`, `partner_id`, `partner_name`, `partner_type`, `trust_level`, `projects_completed`, `same_region`, `need`, `match_rank`, `covers` (text[]), `covers_full_package`
+- Rule: partners offering the school's `recommended_need`, ranked by how much of the `package` they cover, then same region, then trust, then delivery record. `need` is the recommended need.
+
+**`dashboard_priority`** (B, one row per assessed school: who to help first)
+- `school_id`, `school_name`, `region_code`, `region_name`, `is_sensitive`, `readiness_score`, `tier`, `stated_need`, `recommended_need`, `blocked_by`, `enrollment_band`, `verified`
+- `need_points` (100 minus readiness score), `safety_points` (20 if unsafe), `size_points` (under 100: 0, 100 to 300: 10, 300 to 600: 20, over 600: 30), `verified_points` (10 if verified)
+- `priority` (sum of the four), `priority_rank` (1 = help first)
 
 **`dashboard_projects`** (D)
 - `id`, `school_id`, `school_name`, `region_code`, `region_name`, `is_sensitive`, `partner_id`, `partner_name`, `title`, `intervention`, `tier`, `status`, `budget_usd`, `started_at`, `completed_at`, `milestones_total`, `milestones_done`

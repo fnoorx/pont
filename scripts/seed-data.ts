@@ -191,6 +191,19 @@ export const SCHOOLS: SeedSchool[] = [
       { daysAgo: 13, reporter: 5, enrollment: "lt100", building: "unsafe", power: "generator", connectivity: "none", devices: "none", need: "building", notes: "Les murs en terre s'abîment à chaque saison des pluies.", verified: false },
     ],
   },
+  // Dependency examples: good buildings with no electricity.
+  {
+    name: "École Publique du Lac Bleu", region: "AD", town: "Meiganga", lat: 6.52, lng: 14.29,
+    assessments: [
+      { daysAgo: 6, reporter: 9, enrollment: "300_600", building: "good", power: "none", connectivity: "weak", devices: "none", need: "computers", notes: "Le bâtiment est solide, mais il n'y a pas d'électricité.", verified: false },
+    ],
+  },
+  {
+    name: "École Publique des Manguiers", region: "SU", town: "Ebolowa", lat: 2.90, lng: 11.15,
+    assessments: [
+      { daysAgo: 9, reporter: 7, enrollment: "100_300", building: "good", power: "none", connectivity: "good", devices: "enough", need: "internet", notes: "Nous avons reçu 15 ordinateurs portables, mais pas d'électricité pour les charger.", verified: true },
+    ],
+  },
   // South
   {
     name: "École Publique des Vagues Douces", region: "SU", town: "Kribi", lat: 2.94, lng: 9.91,

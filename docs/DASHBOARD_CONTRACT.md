@@ -5,7 +5,7 @@ The database lives in the `ps43-pont` repo. This document is the agreement betwe
 
 **The short version:**
 
-- Read only from the `dashboard_*` views: the 4 core views (section 2) and the 7 pipeline views (section 9). Nothing else.
+- Read only from the `dashboard_*` views: the 4 core views (section 2) and the 8 pipeline views (section 9). Nothing else.
 - The only write is the `set_assessment_verified` RPC.
 - Never create, alter or drop tables, views, policies or functions from the dashboard. If Lovable offers to run a SQL migration, decline it and ask in the team chat instead.
 - Users must be signed in. Signed-out (anon) requests get a permission error on everything.
@@ -314,6 +314,11 @@ Same rules as above: read only, signed-in users only.
 | `score` | number | 0 to 100, the sum of the four |
 | `tier` | string | See tiers below |
 | `safety_first` | boolean | True when an unsafe building forced Tier 0 regardless of score |
+| `tier_capped` | boolean | True when weak power (none or unreliable grid) lowered Tier 2 to Tier 1 |
+| `stated_need` | string | What the school said it needs most (latest `top_need`) |
+| `blocked_by` | string? | First missing prerequisite: `building`, `power`, `devices` (no computers), `signal` (no mobile signal). NULL if nothing blocks the stated need |
+| `recommended_need` | string | What to fund first (a `top_need` value) |
+| `package` | string[] | Everything to fund, in order, to really meet the stated need. Example: `["power", "computers"]` |
 
 **Tiers** (show the name and the one-line recommendation):
 
@@ -321,7 +326,19 @@ Same rules as above: read only, signed-in users only.
 |---|---|---|---|
 | `tier0` | Tier 0: Foundations | Unsafe building, or score under 40 | Safe classrooms first: repairs, desks, books and supplies. Learning materials that need no power. |
 | `tier1` | Tier 1: Offline digital | Score 40 to 69 | Solar power and an offline content server with shared tablets. No internet needed. |
-| `tier2` | Tier 2: Connected | Score 70 or more | Computer lab, internet and teacher training. |
+| `tier2` | Tier 2: Connected | Score 70 or more, and reliable power | Computer lab, internet and teacher training. |
+
+**Dependency rules.** Infrastructure is a chain: safe building → power → devices → internet. A school asking for computers with no electricity gets `blocked_by = power`, `recommended_need = power` and `package = ["power", "computers"]`. A school without reliable power is never Tier 2 (`tier_capped` shows when this happened).
+
+| Stated need | Needs first |
+|---|---|
+| Furniture | A safe building |
+| Power (solar) | A safe building (no panels on an unsafe roof) |
+| Computers | A safe building, then power |
+| Internet | A safe building, power, devices; no signal is flagged |
+| Building, supplies, training, other | Nothing |
+
+Good UI badge: **"Asked for computers · needs power first"** when `blocked_by` is not NULL. Use these labels: `building` "a safe building", `power` "power", `devices` "devices", `signal` "mobile signal (or satellite)".
 
 Showing the four point columns next to the score makes the "transparent rules, not AI" point visible.
 
@@ -350,10 +367,29 @@ Trust story for the UI: partners join through a **referral** from a trusted part
 | `partner_id`, `partner_name`, `partner_type` | | |
 | `trust_level`, `projects_completed` | | |
 | `same_region` | boolean | False means a nationwide partner |
-| `need` | string | The school's latest `top_need` that the partner covers |
+| `need` | string | The school's `recommended_need` (what to fund first) |
 | `match_rank` | number | 1 is the best match |
+| `covers` | string[] | Which items of the school's `package` this partner can deliver |
+| `covers_full_package` | boolean | True if this partner can deliver the whole package. Worth a badge |
 
-Rule: partners who offer the school's biggest need, same region first, then nationwide, ranked by trust then delivery record. Schools whose need is `other` have no matches.
+Rule: partners who offer the school's recommended need, ranked by how much of the package they cover, then same region, then trust, then delivery record. Schools whose need is `other` have no matches.
+
+### `dashboard_priority` (who should PS43 help first)
+
+| Column | Type | Notes |
+|---|---|---|
+| `school_id`, `school_name`, `region_code`, `region_name`, `is_sensitive` | | |
+| `readiness_score`, `tier` | number, string | From `dashboard_readiness` |
+| `stated_need`, `recommended_need`, `blocked_by` | | From `dashboard_readiness` |
+| `enrollment_band`, `verified` | | From the latest report |
+| `need_points` | number | 100 minus the readiness score |
+| `safety_points` | number | 20 if the building is unsafe |
+| `size_points` | number | Students: under 100 = 0, 100 to 300 = 10, 300 to 600 = 20, over 600 = 30 |
+| `verified_points` | number | 10 if PS43 verified the latest report |
+| `priority` | number | Sum of the four (0 to 160). Higher = help sooner |
+| `priority_rank` | number | 1 = help first. Sort by this for the ranked needs list |
+
+Show the four parts next to the total (for example as a stacked bar) so staff and judges can see why a school ranks where it does.
 
 ### `dashboard_projects`
 
@@ -409,12 +445,13 @@ Good for a headline strip, for example: "Attendance up from 64% to 82% after del
 
 ### Suggested screens
 
-1. **School detail:** add a readiness card (tier, score, the four point bars) and a "Matched partners" list.
-2. **Partners:** a table or cards with trust badges and "referred by".
-3. **Projects:** a list with a status and progress bar; click through to milestones with proof photos.
-4. **Impact:** the summary numbers plus an attendance chart per school.
+1. **Ranked needs:** a list sorted by `dashboard_priority.priority_rank`, with the four point parts and a "needs X first" badge.
+2. **School detail:** add a readiness card (tier, score, the four point bars, "fund first" and the package) and a "Matched partners" list with a "covers everything" badge.
+3. **Partners:** a table or cards with trust badges and "referred by".
+4. **Projects:** a list with a status and progress bar; click through to milestones with proof photos.
+5. **Impact:** the summary numbers plus an attendance chart per school.
 
 Suggested Lovable prompt:
 
-> "Add pipeline screens using these Supabase views (read only, do not create tables): on the school detail panel show readiness from `dashboard_readiness` (tier name, score out of 100, and four point bars) and up to 3 matched partners from `dashboard_partner_matches` filtered by `school_id`. Add a Partners page from `dashboard_partners` with trust badges (new, referred, proven) and 'referred by'. Add a Projects page from `dashboard_projects` with status and a milestones progress bar; clicking a project lists `dashboard_milestones` by `sort_order` with proof photos from the private `field-media` bucket via signed URLs. Add an Impact page with a headline strip from `dashboard_impact_summary` and a weekly attendance line chart per school from `dashboard_attendance`. Label Projects, Partners and Impact as demo data."
+> "Add a 'Ranked needs' page from the `dashboard_priority` view sorted by `priority_rank`, showing priority with a stacked bar of need_points, safety_points, size_points and verified_points, and a badge 'needs {blocked_by} first' when blocked_by is set. Add pipeline screens using these Supabase views (read only, do not create tables): on the school detail panel show readiness from `dashboard_readiness` (tier name, score out of 100, and four point bars) and up to 3 matched partners from `dashboard_partner_matches` filtered by `school_id`. Add a Partners page from `dashboard_partners` with trust badges (new, referred, proven) and 'referred by'. Add a Projects page from `dashboard_projects` with status and a milestones progress bar; clicking a project lists `dashboard_milestones` by `sort_order` with proof photos from the private `field-media` bucket via signed URLs. Add an Impact page with a headline strip from `dashboard_impact_summary` and a weekly attendance line chart per school from `dashboard_attendance`. Label Projects, Partners and Impact as demo data."
 
