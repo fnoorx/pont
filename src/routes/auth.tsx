@@ -28,7 +28,7 @@ function Login() {
 
   useEffect(() => {
     db().auth.getSession().then(({ data }) => {
-      if (data.session) nav({ to: "/live-schools", replace: true });
+      if (data.session) nav({ to: "/dashboard", replace: true });
     });
   }, [nav]);
 
@@ -39,7 +39,7 @@ function Login() {
     const { error } = await db().auth.signInWithPassword({ email, password });
     setBusy(false);
     if (error) return setErr(error.message);
-    nav({ to: "/live-schools", replace: true });
+    nav({ to: "/dashboard", replace: true });
   }
 
   return (

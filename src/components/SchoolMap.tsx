@@ -17,6 +17,10 @@ export default function SchoolMap({ schools, regions, selectedId, onSelect }: Pr
   const lib = useRef<typeof L | null>(null);
   const onSel = useRef(onSelect);
   onSel.current = onSelect;
+  // Latest props for draw(): Leaflet loads asynchronously, so the first draw can run after
+  // newer data has arrived. Reading from a ref avoids drawing a stale (empty) list.
+  const latest = useRef({ schools, regions, selectedId });
+  latest.current = { schools, regions, selectedId };
 
   useEffect(() => {
     let cancelled = false;
@@ -37,7 +41,6 @@ export default function SchoolMap({ schools, regions, selectedId, onSelect }: Pr
       map.current?.remove();
       map.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => draw());
@@ -45,6 +48,7 @@ export default function SchoolMap({ schools, regions, selectedId, onSelect }: Pr
   function draw() {
     const Lf = lib.current;
     const g = layer.current;
+    const { schools, regions, selectedId } = latest.current;
     if (!Lf || !g) return;
     g.clearLayers();
     const css = getComputedStyle(document.documentElement);

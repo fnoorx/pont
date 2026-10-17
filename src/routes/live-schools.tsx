@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Fragment, lazy, Suspense, useEffect, useMemo, useState } from "react";
 import {
-  db, type Row, schoolId, schoolName, region, condition, topNeed, needScore, rankByNeed,
+  db, type Row, schoolId, schoolName, region, condition, topNeed,
   str, num, pick, fmtDate, label,
 } from "@/lib/ps43";
 
@@ -50,19 +50,27 @@ function Dashboard() {
   const opts = { enabled: ready, refetchInterval: REFRESH };
   const schoolsQ = useQuery({ queryKey: ["schools"], queryFn: () => fetchView("dashboard_schools"), ...opts });
   const regionsQ = useQuery({ queryKey: ["regions"], queryFn: () => fetchView("dashboard_region_stats"), ...opts });
+  // Ranking comes from dashboard_priority (priority_rank 1 = help first).
+  const priorityQ = useQuery({ queryKey: ["priority"], queryFn: () => fetchView("dashboard_priority"), ...opts });
 
   const [selected, setSelected] = useState<string | null>(null);
   const [fRegion, setFRegion] = useState("");
   const [fCond, setFCond] = useState("");
   const [fNeed, setFNeed] = useState("");
 
-  const schools = schoolsQ.data ?? [];
+  const schools = useMemo(() => schoolsQ.data ?? [], [schoolsQ.data]);
   const regions = regionsQ.data ?? [];
   const uniq = (f: (r: Row) => string) => [...new Set(schools.map(f).filter(Boolean))].sort();
+  const priorityById = useMemo(
+    () => new Map((priorityQ.data ?? []).map((p) => [str(p, "school_id"), p])),
+    [priorityQ.data],
+  );
   const ranked = useMemo(
-    () => rankByNeed(schools).filter((s) =>
-      (!fRegion || region(s) === fRegion) && (!fCond || condition(s) === fCond) && (!fNeed || topNeed(s) === fNeed)),
-    [schools, fRegion, fCond, fNeed],
+    () => [...schools]
+      .sort((a, b) => (num(priorityById.get(schoolId(a)), "priority_rank") ?? 1e9) - (num(priorityById.get(schoolId(b)), "priority_rank") ?? 1e9))
+      .filter((s) =>
+        (!fRegion || region(s) === fRegion) && (!fCond || condition(s) === fCond) && (!fNeed || topNeed(s) === fNeed)),
+    [schools, priorityById, fRegion, fCond, fNeed],
   );
   const current = schools.find((s) => schoolId(s) === selected);
 
@@ -74,7 +82,7 @@ function Dashboard() {
   }
 
   if (!ready) return <div className="p-10 text-sm text-muted-foreground">Checking your sign-in…</div>;
-  const err = schoolsQ.error || regionsQ.error;
+  const err = schoolsQ.error || regionsQ.error || priorityQ.error;
 
   return (
     <div className="min-h-screen bg-background font-sans text-foreground">
@@ -127,12 +135,16 @@ function Dashboard() {
                 <li key={schoolId(s)}>
                   <button onClick={() => setSelected(schoolId(s))}
                     className={`flex w-full items-center gap-4 px-4 py-3 text-left text-sm hover:bg-accent/40 ${selected === schoolId(s) ? "bg-accent/60" : ""}`}>
-                    <span className="w-6 text-muted-foreground">{i + 1}</span>
+                    <span className="w-6 text-muted-foreground">{num(priorityById.get(schoolId(s)), "priority_rank") ?? i + 1}</span>
                     <span className="flex-1">
                       <span className="font-medium">{schoolName(s)}</span>
                       <span className="block text-xs text-muted-foreground">{[region(s), condition(s), topNeed(s)].filter(Boolean).join(" · ")}</span>
                     </span>
-                    {needScore(s) != null && <span className="rounded bg-warn/20 px-2 py-0.5 text-xs font-semibold">{needScore(s)}</span>}
+                    {num(priorityById.get(schoolId(s)), "priority") != null && (
+                      <span className="rounded bg-warn/20 px-2 py-0.5 text-xs font-semibold" title="Priority out of 160">
+                        {num(priorityById.get(schoolId(s)), "priority")}
+                      </span>
+                    )}
                   </button>
                 </li>
               ))}

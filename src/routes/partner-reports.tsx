@@ -2,5 +2,6 @@ import { createFileRoute } from '@tanstack/react-router';
 import { OperationsShell } from '@/components/operations/OperationsShell';
 import { PartnerReports } from '@/components/operations/PartnerReports';
 import { operationsHead } from '@/lib/operations';
-export const Route=createFileRoute('/partner-reports')({validateSearch:(s:Record<string,unknown>): {status?: string;urgency?: string;category?: string;location?: string;record?: string} =>({status:typeof s['status']==='string'?s['status']:'',urgency:typeof s['urgency']==='string'?s['urgency']:'',category:typeof s['category']==='string'?s['category']:'',location:typeof s['location']==='string'?s['location']:'',record:typeof s['record']==='string'?s['record']:''}),head:()=>operationsHead('Partner reports','Review and verify simulated PS43 partner reports and infrastructure needs.'),component:Page});
+const text=(v:unknown)=>typeof v==='string'?v:'';
+export const Route=createFileRoute('/partner-reports')({validateSearch:(s:Record<string,unknown>): {status?: string;need?: string;region?: string;channel?: string;record?: string} =>({status:text(s['status']),need:text(s['need']),region:text(s['region']),channel:text(s['channel']),record:text(s['record'])}),head:()=>operationsHead('Field reports','Review and verify school reports submitted through the Pont chat.'),component:Page});
 function Page(){return <OperationsShell><PartnerReports/></OperationsShell>;}
