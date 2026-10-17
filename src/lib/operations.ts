@@ -8,7 +8,7 @@ export type Report = {
 };
 export const stages = ['Proposed', 'Under Review', 'Approved', 'In Progress', 'Delivered', 'Verified'] as const;
 export type Stage = typeof stages[number];
-export type Project = { id: string; name: string; school: string; location: string; partner: string; owner: string; stage: Stage; next: string; deadline: string; blockers: string[]; resource: string; allocated: number; delivered: number; functionality: 'Not assessed' | 'Functional' | 'Needs repair'; evidence?: string };
+export type Project = { id: string; name: string; school: string; location: string; partner: string; owner: string; stage: Stage; next: string; deadline: string; blockers: string[]; resource: string; allocated: number; delivered: number; functionality: 'Not assessed' | 'Functional' | 'Needs repair'; evidence?: string | undefined };
 export type Audit = { id: string; text: string; at: string };
 export const seedReports: Report[] = [
   {id:'RPT-0248', partner:'Marie N. · Community Link',school:'Government School Bafut',location:'Northwest',category:'Classroom repair',urgency:'Critical',date:'2026-10-17',status:'Unverified',message:'Good morning PS43. Heavy rain has damaged the roof of two classrooms at GS Bafut. Children cannot use these rooms safely. We have 186 learners. Please help us arrange an assessment and roofing sheets.',beneficiaries:186,safety:true,lat:6.08,lng:10.12,missing:['Site assessment photos']},
