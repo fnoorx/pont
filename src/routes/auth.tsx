@@ -50,7 +50,7 @@ function Login() {
           <span className="flex-1 bg-primary" /><span className="flex-1 bg-secondary" /><span className="flex-1 bg-info" /><span className="flex-1 bg-destructive" />
         </div>
         <div className="p-8">
-          <img src={symbol.url} alt="PS43 Foundation" className="mb-4 h-12 w-14 object-contain" />
+          <img src={symbol} alt="PS43 Foundation" className="mb-4 h-14 w-11 object-contain" />
           <p className="text-xs font-semibold uppercase tracking-widest text-primary">PS43 Foundation</p>
           <h1 className="mt-2 font-display text-3xl text-info">Staff dashboard</h1>
           <p className="mt-1 text-sm text-muted-foreground">Sign in with your staff account.</p>
