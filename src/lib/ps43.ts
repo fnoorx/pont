@@ -12,9 +12,9 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
  * role key or other secret may ever be placed here.
  */
 export const SUPABASE_URL =
-  import.meta.env.VITE_SUPABASE_URL ?? "https://pfniphvzvgmmghejwadl.supabase.co";
+  import.meta.env["VITE_SUPABASE_URL"] ?? "https://pfniphvzvgmmghejwadl.supabase.co";
 export const SUPABASE_ANON_KEY =
-  import.meta.env.VITE_SUPABASE_ANON_KEY ??
+  import.meta.env["VITE_SUPABASE_ANON_KEY"] ??
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBmbmlwaHZ6dmdtbWdoZWp3YWRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIyNTY0MTMsImV4cCI6MjEwNzgzMjQxM30.fRcCvpvsPf4HVsLoSDagc7jNx09ASWSnTv9niPx0o6w";
 
 if (import.meta.env.DEV && (!SUPABASE_URL || !SUPABASE_ANON_KEY)) {
