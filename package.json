@@ -1,0 +1,38 @@
+{
+  "name": "ps43-pont",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pont: field intake for PS43 school needs in Cameroon (database, engine, webhook).",
+  "type": "module",
+  "engines": {
+    "node": ">=20.12"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "seed": "tsx scripts/seed.ts",
+    "verify": "tsx scripts/verify-contract.ts",
+    "simulate": "tsx scripts/simulate.ts",
+    "db:push": "supabase db push",
+    "functions:deploy": "supabase functions deploy --no-verify-jwt --use-api",
+    "demo:card": "tsx scripts/join-card.ts",
+    "demo:reset": "tsx scripts/seed.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.118.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.6.5",
+    "@types/qrcode": "^1.5.5",
+    "eslint": "^10.13.0",
+    "qrcode": "^1.5.4",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.71.2",
+    "vitest": "^5.0.5"
+  }
+}
