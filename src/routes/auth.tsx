@@ -1,6 +1,8 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { db } from "@/lib/ps43";
+import { Button } from "@/components/ui/button";
+import symbol from "@/assets/ps43-symbol.png.asset.json";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -42,6 +44,7 @@ function Login() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4 font-sans">
       <form onSubmit={submit} className="w-full max-w-sm rounded-xl border border-border bg-card p-8 shadow-sm">
+        <img src={symbol.url} alt="PS43 Foundation" className="mb-4 h-12 w-14 object-contain" />
         <p className="text-xs font-semibold uppercase tracking-widest text-primary">PS43 Foundation</p>
         <h1 className="mt-2 font-display text-3xl text-foreground">Staff dashboard</h1>
         <p className="mt-1 text-sm text-muted-foreground">Sign in with your staff account.</p>
@@ -52,10 +55,11 @@ function Login() {
         <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
           className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
         {err && <p className="mt-3 text-sm text-destructive">{err}</p>}
-        <button disabled={busy}
+        <Button disabled={busy} type="submit"
           className="mt-6 w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
           {busy ? "Signing in…" : "Sign in"}
-        </button>
+        </Button>
+        <Button variant="link" asChild className="mt-3 w-full"><Link to="/dashboard">Operations demo workspace</Link></Button>
       </form>
     </main>
   );
