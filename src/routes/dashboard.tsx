@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { Fragment, lazy, Suspense, useEffect, useMemo, useState } from "react";
 import {
   db, type Row, schoolId, schoolName, region, condition, topNeed, needScore, rankByNeed,
   str, num, pick, fmtDate, label,
@@ -209,7 +209,7 @@ function Detail({ school, ready }: { school: Row; ready: boolean }) {
     <div>
       <h2 className="font-display text-2xl">{schoolName(school)}</h2>
       <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-        {facts.map(([k, v]) => (<><dt key={k + "k"} className="text-muted-foreground">{label(k)}</dt><dd key={k + "v"}>{String(v)}</dd></>))}
+        {facts.map(([k, v]) => (<Fragment key={k}><dt className="text-muted-foreground">{label(k)}</dt><dd>{String(v)}</dd></Fragment>))}
       </dl>
 
       <h3 className="mt-6 text-sm font-semibold uppercase tracking-wide text-primary">Report history</h3>
@@ -230,7 +230,7 @@ function Detail({ school, ready }: { school: Row; ready: boolean }) {
               </div>
               <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-0.5">
                 {Object.entries(a).filter(([k, x]) => x != null && x !== "" && typeof x !== "object" && !HIDE.test(k) && !/_at$/.test(k)).map(([k, x]) => (
-                  <><dt key={k + "k"} className="text-muted-foreground">{label(k)}</dt><dd key={k + "v"}>{String(x)}</dd></>
+                  <Fragment key={k}><dt className="text-muted-foreground">{label(k)}</dt><dd>{String(x)}</dd></Fragment>
                 ))}
               </dl>
             </li>
