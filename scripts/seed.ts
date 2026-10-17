@@ -2,9 +2,9 @@
 // Safe to run repeatedly. Uses the service role key, so never run it from the dashboard.
 import { crc32, deflateSync } from "node:zlib";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { hashPhone, last4 } from "../src/lib/privacy.js";
-import { loadEnv } from "./env.js";
-import { REPORTERS, SCHOOLS } from "./seed-data.js";
+import { hashPhone, last4 } from "../src/lib/privacy.ts";
+import { loadEnv } from "./env.ts";
+import { REPORTERS, SCHOOLS } from "./seed-data.ts";
 
 const BUCKET = "field-media";
 

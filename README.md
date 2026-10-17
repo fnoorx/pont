@@ -58,6 +58,40 @@ You need Node 20.12 or newer and the [Supabase CLI](https://supabase.com/docs/gu
    "Allow new users to sign up". Otherwise anyone with the anon key could create an account
    and read the dashboard views. The verify script warns if this is still on.
 
+## WhatsApp setup (Twilio sandbox)
+
+The bot runs as the `twilio-webhook` Supabase Edge Function. WhatsApp and SMS share it.
+
+1. In Twilio, open Messaging > Try it out > Send a WhatsApp message. Note the sandbox number
+   and join code. Add `TWILIO_ACCOUNT_SID` and `TWILIO_AUTH_TOKEN` to `.env`.
+
+2. Set the function secrets (Supabase provides its own URL and service role key automatically).
+   `PHONE_HASH_SALT` must be the same value as in `.env`:
+
+   ```sh
+   supabase secrets set TWILIO_ACCOUNT_SID=... TWILIO_AUTH_TOKEN=... PHONE_HASH_SALT=... \
+     PUBLIC_WEBHOOK_URL=https://<project-ref>.supabase.co/functions/v1/twilio-webhook
+   ```
+
+3. Deploy:
+
+   ```sh
+   npm run functions:deploy
+   ```
+
+4. In the Twilio sandbox settings, set "When a message comes in" to the `PUBLIC_WEBHOOK_URL`
+   above, method `POST`, and save.
+
+5. From your phone, send the join code (for example `join purple-tiger`) to the sandbox number,
+   then send any message. You should get a reply.
+
+Notes:
+- Requests are checked against the Twilio signature, so the URL in Twilio must exactly match
+  `PUBLIC_WEBHOOK_URL`.
+- Sandbox participants must rejoin after 3 days of inactivity.
+- On a Twilio trial, SMS replies only reach phone numbers verified in your Twilio console.
+- Logs: Supabase dashboard > Edge Functions > twilio-webhook > Logs.
+
 ## Commands
 
 | Command | What it does |
@@ -69,13 +103,16 @@ You need Node 20.12 or newer and the [Supabase CLI](https://supabase.com/docs/gu
 | `npm run verify` | Same as `npx tsx scripts/verify-contract.ts` |
 | `npm run db:push` | Apply migrations to the linked project |
 | `npm run simulate` | Terminal chat with the bot (not built yet) |
-| `npm run functions:deploy` | Deploy the webhook (not built yet) |
+| `npm run functions:deploy` | Deploy the WhatsApp/SMS webhook Edge Function |
 
 ## Layout
 
 ```
 src/lib/          privacy utilities (phone hashing, coordinate rounding)
-src/engine/       conversation engine (coming next)
+src/engine/       conversation engine (placeholder for now) and bot strings
+src/messaging/    Twilio parsing, TwiML replies, signature check
+src/webhook/      webhook handler and Supabase store
+supabase/functions/twilio-webhook/  Edge Function entry point
 scripts/          seed, verify-contract, simulate
 supabase/         config and migrations
 docs/             dashboard contract

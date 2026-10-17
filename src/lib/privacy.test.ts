@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { hashPhone, last4, roundCoord } from "./privacy.js";
+import { hashPhone, last4, roundCoord } from "./privacy.ts";
 
 describe("hashPhone", () => {
   it("returns the salted SHA-256 hex digest", async () => {

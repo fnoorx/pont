@@ -2,7 +2,7 @@
 // using only the ANON key, exactly as the Lovable dashboard would.
 // Run: npx tsx scripts/verify-contract.ts
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { loadEnv } from "./env.js";
+import { loadEnv } from "./env.ts";
 
 const env = loadEnv(["SUPABASE_URL", "SUPABASE_ANON_KEY", "DEMO_STAFF_EMAIL", "DEMO_STAFF_PASSWORD"]);
 

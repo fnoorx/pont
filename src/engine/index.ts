@@ -1,3 +1,3 @@
-// Conversation engine (pure function, no I/O). Not built yet.
-// Signature will be: (session, inboundMessage) => { nextSession, outboundMessages }
-export {};
+// Conversation engine entry point. The real school assessment engine replaces the placeholder here.
+export { placeholderEngine as engine } from "./placeholder.ts";
+export type * from "./types.ts";

@@ -16,7 +16,7 @@
     "verify": "tsx scripts/verify-contract.ts",
     "simulate": "tsx scripts/simulate.ts",
     "db:push": "supabase db push",
-    "functions:deploy": "echo \"No Edge Functions yet. The webhook is not built.\" && exit 0"
+    "functions:deploy": "supabase functions deploy twilio-webhook --no-verify-jwt --use-api"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",
