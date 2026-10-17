@@ -188,7 +188,7 @@
   </header>
 
   <main id="chat" aria-live="polite">
-    <div class="banner">Demo: a WhatsApp-style version of the Pont bot. Please use a made-up school.<br>Démo : utilisez une école imaginaire.</div>
+    <div class="banner">Demo: a WhatsApp-style version of the Pont bot.<br>Démo : une version du bot Pont inspirée de WhatsApp.</div>
     <div class="day"><span>Today</span></div>
   </main>
 
@@ -328,6 +328,14 @@
     } else if (!on && existing) existing.remove();
   }
 
+  // Fake "typing..." time before each bot reply: longer messages take longer, with a little
+  // randomness so it feels human. Never more than 2.5 seconds (time spent waiting on the
+  // server counts toward it).
+  const MAX_TYPING_MS = 2500;
+  const typingTime = (text) =>
+    Math.min(MAX_TYPING_MS, Math.max(600, 450 + text.length * 8 + (Math.random() - 0.5) * 500));
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
   async function send({ text = "", display, image, location: loc, hidden = false }) {
     if (busy) return;
     busy = true;
@@ -342,6 +350,7 @@
       save();
     }
     showTyping(true);
+    const started = performance.now();
     try {
       const payload = { clientId, messageId, text };
       if (image) payload.image = { dataUrl: image };
@@ -349,13 +358,17 @@
       const res = await fetch(API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      showTyping(false);
-      markRead();
-      for (const reply of data.replies || []) {
+      markRead(); // blue ticks first, then "typing...", like WhatsApp
+      for (const [i, reply] of (data.replies || []).entries()) {
+        const alreadyWaited = i === 0 ? performance.now() - started : 0;
+        showTyping(true);
+        await sleep(Math.max(0, typingTime(reply) - alreadyWaited));
+        showTyping(false);
         const m = { from: "in", text: reply, time: Date.now() };
         transcript.push(m);
         render(m);
       }
+      showTyping(false);
       save();
       const last = (data.replies || []).at(-1);
       updateChips(last);
