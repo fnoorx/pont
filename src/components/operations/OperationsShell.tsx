@@ -2,7 +2,7 @@ import { Link } from '@tanstack/react-router';
 import { useState, type ReactNode } from 'react';
 import { LayoutDashboard, MessageSquareText, Layers3, FolderKanban, ChartNoAxesCombined, Search, Bell, Menu, ChevronLeft, ChevronRight, ArrowUpRight, CircleHelp, Radio, X, Check, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import symbol from '@/assets/ps43-symbol-stacked.png';
+import symbol from '@/assets/ps43-logo.png';
 import { useOperations } from './OperationsProvider';
 import { ThemeToggle } from '@/components/ThemeToggle';
 const links=[{to:'/dashboard',label:'Overview',icon:LayoutDashboard},{to:'/partner-reports',label:'Partner Reports',icon:MessageSquareText},{to:'/needs',label:'Needs & Priorities',icon:Layers3},{to:'/projects',label:'Projects & Deployment',icon:FolderKanban},{to:'/impact',label:'Impact & Reports',icon:ChartNoAxesCombined}] as const;
@@ -13,7 +13,7 @@ export function OperationsShell({children}:{children:ReactNode}){
  return <div className="min-h-screen bg-background text-foreground">
  {mobile&&<div className="fixed inset-0 z-[1000] bg-foreground/30 lg:hidden" onClick={()=>setMobile(false)}/>}
  <aside className={`fixed inset-y-0 left-0 z-[1001] flex flex-col border-r border-border bg-sidebar transition-[width,transform] ${compact?'lg:w-[76px]':'lg:w-[232px]'} w-[232px] ${mobile?'translate-x-0':'-translate-x-full lg:translate-x-0'}`}>
-  <Link to="/dashboard" className="flex h-[84px] shrink-0 items-center gap-3 px-6" onClick={()=>setMobile(false)}><img src={symbol} alt="PS43" className="h-10 w-8 object-contain"/>{!compact&&<div className="min-w-0"><p className="text-[21px] font-bold leading-none">PS43<span className="text-primary">.</span></p><p className="mt-1.5 text-[10px] font-semibold text-muted-foreground">FOUNDATION</p></div>}</Link>
+  <Link to="/dashboard" className="flex h-[84px] shrink-0 items-center gap-3 px-6" onClick={()=>setMobile(false)}><img src={symbol} alt="PS43" className="h-10 w-14 object-contain"/>{!compact&&<div className="min-w-0"><p className="text-[21px] font-bold leading-none">PS43<span className="text-primary">.</span></p><p className="mt-1.5 text-[10px] font-semibold text-muted-foreground">FOUNDATION</p></div>}</Link>
   {!compact&&<p className="px-6 pb-3 pt-4 text-[10px] font-semibold text-muted-foreground">WORKSPACE</p>}
   <nav className="space-y-1 px-3" aria-label="Main navigation">{links.map(l=><Link key={l.to} to={l.to} title={compact?l.label:undefined} activeOptions={{exact:true}} onClick={()=>setMobile(false)} className="flex min-h-11 items-center gap-3 rounded-md px-3 text-[13px] font-medium" activeProps={{className:'bg-accent text-primary'}} inactiveProps={{className:'text-muted-foreground hover:bg-muted'}}><l.icon className="size-[18px] shrink-0"/>{!compact&&<span className="min-w-0">{l.label}</span>}{!compact&&l.to==='/partner-reports'&&<span className="ml-auto text-[11px]">{reports.filter(r=>r.status!=='Verified').length}</span>}</Link>)}</nav>
   <div className="mt-auto space-y-4 p-4">
