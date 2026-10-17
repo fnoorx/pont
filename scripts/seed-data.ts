@@ -199,3 +199,150 @@ export const SCHOOLS: SeedSchool[] = [
     ],
   },
 ];
+
+// ---------------------------------------------------------------------------
+// Prototype mock data for Match (C) and Deliver/Prove (D). All fictional.
+// ---------------------------------------------------------------------------
+
+export type PartnerType = "ngo" | "community_org" | "contractor" | "supplier";
+export type TrustLevel = "new" | "referred" | "proven";
+export type Service = Exclude<TopNeed, "other">;
+
+export interface SeedPartner {
+  key: string;
+  name: string;
+  type: PartnerType;
+  /** null = works nationwide */
+  region: string | null;
+  town: string | null;
+  services: Service[];
+  trust: TrustLevel;
+  projectsCompleted: number;
+  referredBy?: string;
+  joinedDaysAgo: number;
+}
+
+export const PARTNERS: SeedPartner[] = [
+  // Nationwide
+  { key: "solarbridge", name: "SolarBridge Cooperative", type: "supplier", region: null, town: null, services: ["power", "computers"], trust: "proven", projectsCompleted: 9, joinedDaysAgo: 400 },
+  { key: "pages", name: "Pages for All Book Network", type: "ngo", region: null, town: null, services: ["supplies", "training"], trust: "proven", projectsCompleted: 12, joinedDaysAgo: 380 },
+  { key: "openclass", name: "OpenClass Teacher Collective", type: "ngo", region: null, town: null, services: ["training", "computers", "internet"], trust: "referred", projectsCompleted: 3, referredBy: "pages", joinedDaysAgo: 200 },
+  { key: "classrooms", name: "Classrooms Rising Foundation", type: "ngo", region: null, town: null, services: ["building", "furniture"], trust: "referred", projectsCompleted: 2, referredBy: "solarbridge", joinedDaysAgo: 150 },
+  // Regional
+  { key: "bamenda_builders", name: "Bamenda Builders Union", type: "contractor", region: "NW", town: "Bamenda", services: ["building", "furniture"], trust: "proven", projectsCompleted: 6, joinedDaysAgo: 320 },
+  { key: "kumbo_parents", name: "Kumbo Parents Network", type: "community_org", region: "NW", town: "Kumbo", services: ["furniture", "supplies"], trust: "referred", projectsCompleted: 1, referredBy: "bamenda_builders", joinedDaysAgo: 90 },
+  { key: "fako_action", name: "Fako Community Action", type: "community_org", region: "SW", town: "Buea", services: ["building", "supplies"], trust: "proven", projectsCompleted: 4, joinedDaysAgo: 290 },
+  { key: "limbe_hub", name: "Limbe Digital Hub", type: "ngo", region: "SW", town: "Limbe", services: ["computers", "internet", "training"], trust: "referred", projectsCompleted: 1, referredBy: "fako_action", joinedDaysAgo: 120 },
+  { key: "sahel_ecoles", name: "Sahel Écoles Solidaires", type: "ngo", region: "EN", town: "Maroua", services: ["building", "furniture", "supplies"], trust: "proven", projectsCompleted: 5, joinedDaysAgo: 350 },
+  { key: "maroua_menuiserie", name: "Coopérative Menuiserie du Diamaré", type: "contractor", region: "EN", town: "Maroua", services: ["furniture"], trust: "new", projectsCompleted: 0, referredBy: "sahel_ecoles", joinedDaysAgo: 30 },
+  { key: "yaounde_tech", name: "Tech pour Tous Centre", type: "ngo", region: "CE", town: "Yaoundé", services: ["computers", "internet", "training"], trust: "proven", projectsCompleted: 7, joinedDaysAgo: 410 },
+  { key: "douala_batisseurs", name: "Bâtisseurs Associés du Wouri", type: "contractor", region: "LT", town: "Douala", services: ["building", "power"], trust: "referred", projectsCompleted: 2, referredBy: "classrooms", joinedDaysAgo: 140 },
+  { key: "hauts_plateaux", name: "Hauts Plateaux Énergie", type: "supplier", region: "OU", town: "Dschang", services: ["power", "computers"], trust: "new", projectsCompleted: 0, referredBy: "solarbridge", joinedDaysAgo: 25 },
+  { key: "benoue", name: "Bénoué Éducation Communautaire", type: "community_org", region: "NO", town: "Garoua", services: ["building", "supplies"], trust: "referred", projectsCompleted: 1, referredBy: "sahel_ecoles", joinedDaysAgo: 100 },
+  { key: "foret_claire", name: "Coopérative de la Forêt Claire", type: "community_org", region: "ES", town: "Bertoua", services: ["building", "furniture"], trust: "new", projectsCompleted: 0, joinedDaysAgo: 40 },
+];
+
+export type ProjectStatus = "planned" | "in_progress" | "completed";
+export type Tier = "tier0" | "tier1" | "tier2";
+
+export interface SeedMilestone {
+  title: string;
+  done: boolean;
+  /** Days from today; negative is in the past. */
+  dueInDays: number;
+  completedDaysAgo?: number;
+  /** Attach a placeholder photo (building or delivery, never people). */
+  photo?: boolean;
+  verified?: boolean;
+}
+
+export interface SeedProject {
+  school: string; // must match a SCHOOLS name
+  partner: string; // PARTNERS key
+  title: string;
+  intervention: Service;
+  tier: Tier;
+  status: ProjectStatus;
+  budgetUsd: number;
+  startedDaysAgo?: number;
+  completedDaysAgo?: number;
+  milestones: SeedMilestone[];
+}
+
+export const PROJECTS: SeedProject[] = [
+  {
+    school: "Lycée des Sept Collines", partner: "yaounde_tech", title: "Computer lab with 20 laptops", intervention: "computers", tier: "tier2",
+    status: "completed", budgetUsd: 14000, startedDaysAgo: 75, completedDaysAgo: 42,
+    milestones: [
+      { title: "Laptops purchased", done: true, dueInDays: -70, completedDaysAgo: 68, verified: true },
+      { title: "Delivered to school", done: true, dueInDays: -60, completedDaysAgo: 58, photo: true, verified: true },
+      { title: "Lab installed and tested", done: true, dueInDays: -50, completedDaysAgo: 47, photo: true, verified: true },
+      { title: "Handover to headteacher", done: true, dueInDays: -42, completedDaysAgo: 42, verified: true },
+    ],
+  },
+  {
+    school: "École Publique du Baobab Doré", partner: "sahel_ecoles", title: "Roof repair for two classrooms", intervention: "building", tier: "tier0",
+    status: "completed", budgetUsd: 6500, startedDaysAgo: 40, completedDaysAgo: 12,
+    milestones: [
+      { title: "Materials purchased", done: true, dueInDays: -35, completedDaysAgo: 36, verified: true },
+      { title: "Roof frame rebuilt", done: true, dueInDays: -22, completedDaysAgo: 20, photo: true, verified: true },
+      { title: "Roof sheets installed", done: true, dueInDays: -14, completedDaysAgo: 12, photo: true, verified: false },
+    ],
+  },
+  {
+    school: "Morning Star Community School", partner: "bamenda_builders", title: "Emergency roof and wall repair", intervention: "building", tier: "tier0",
+    status: "in_progress", budgetUsd: 8200, startedDaysAgo: 16,
+    milestones: [
+      { title: "Materials purchased", done: true, dueInDays: -12, completedDaysAgo: 11, photo: true, verified: true },
+      { title: "Walls reinforced", done: false, dueInDays: 5 },
+      { title: "New roof installed", done: false, dueInDays: 20 },
+      { title: "Final inspection with photo", done: false, dueInDays: 28 },
+    ],
+  },
+  {
+    school: "Palm Grove Nursery and Primary", partner: "limbe_hub", title: "Offline learning kit: content server and 10 tablets", intervention: "computers", tier: "tier1",
+    status: "in_progress", budgetUsd: 4800, startedDaysAgo: 20,
+    milestones: [
+      { title: "Tablets and server purchased", done: true, dueInDays: -15, completedDaysAgo: 14, verified: true },
+      { title: "Delivered to school", done: true, dueInDays: -6, completedDaysAgo: 5, photo: true, verified: false },
+      { title: "Teachers trained", done: false, dueInDays: 10 },
+    ],
+  },
+  {
+    school: "Complexe Scolaire Les Palmiers Bleus", partner: "openclass", title: "Teacher training on digital tools", intervention: "training", tier: "tier2",
+    status: "in_progress", budgetUsd: 2500, startedDaysAgo: 10,
+    milestones: [
+      { title: "Trainer confirmed", done: true, dueInDays: -8, completedDaysAgo: 9, verified: true },
+      { title: "Session 1 held", done: false, dueInDays: 4 },
+      { title: "Session 2 held", done: false, dueInDays: 18 },
+      { title: "Follow-up visit", done: false, dueInDays: 45 },
+    ],
+  },
+  {
+    school: "École des Hautes Terres", partner: "solarbridge", title: "Offline learning kit: content server and 10 tablets", intervention: "computers", tier: "tier1",
+    status: "planned", budgetUsd: 4800,
+    milestones: [
+      { title: "Tablets and server purchased", done: false, dueInDays: 14 },
+      { title: "Delivered to school", done: false, dueInDays: 30 },
+      { title: "Teachers trained", done: false, dueInDays: 40 },
+    ],
+  },
+  {
+    school: "École Publique du Baobab Doré", partner: "maroua_menuiserie", title: "120 desks (tables-bancs)", intervention: "furniture", tier: "tier0",
+    status: "planned", budgetUsd: 3600,
+    milestones: [
+      { title: "Order placed", done: false, dueInDays: 7 },
+      { title: "Desks delivered", done: false, dueInDays: 35 },
+      { title: "Final check with photo", done: false, dueInDays: 40 },
+    ],
+  },
+  {
+    school: "École Publique de l'Étoile du Nord", partner: "benoue", title: "Rebuild collapsed classroom", intervention: "building", tier: "tier0",
+    status: "planned", budgetUsd: 9500,
+    milestones: [
+      { title: "Site assessment", done: false, dueInDays: 10 },
+      { title: "Materials purchased", done: false, dueInDays: 25 },
+      { title: "Classroom rebuilt", done: false, dueInDays: 75 },
+    ],
+  },
+];

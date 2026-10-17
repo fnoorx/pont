@@ -22,9 +22,40 @@ const VIEW_COLUMNS: Record<string, string[]> = {
     "no_power_count", "top_need", "last_submitted_at",
   ],
   dashboard_media: ["id", "assessment_id", "school_id", "type", "storage_path", "created_at"],
+  // Prototype pipeline views (B, C, D).
+  dashboard_readiness: [
+    "school_id", "school_name", "region_code", "region_name", "is_sensitive", "latest_assessment_id",
+    "building_points", "power_points", "connectivity_points", "devices_points", "score", "tier", "safety_first",
+  ],
+  dashboard_partners: [
+    "id", "name", "type", "region_code", "region_name", "town", "services", "trust_level", "projects_completed",
+    "referred_by_id", "referred_by_name", "joined_at",
+  ],
+  dashboard_partner_matches: [
+    "school_id", "partner_id", "partner_name", "partner_type", "trust_level", "projects_completed", "same_region",
+    "need", "match_rank",
+  ],
+  dashboard_projects: [
+    "id", "school_id", "school_name", "region_code", "region_name", "is_sensitive", "partner_id", "partner_name",
+    "title", "intervention", "tier", "status", "budget_usd", "started_at", "completed_at", "milestones_total",
+    "milestones_done",
+  ],
+  dashboard_milestones: [
+    "id", "project_id", "school_id", "sort_order", "title", "status", "due_date", "completed_at", "photo_path", "verified",
+  ],
+  dashboard_attendance: [
+    "school_id", "school_name", "region_code", "week_start", "students_present", "students_enrolled", "attendance_rate",
+  ],
+  dashboard_impact_summary: [
+    "school_count", "assessment_count", "verified_count", "partner_count", "proven_partner_count", "projects_planned",
+    "projects_in_progress", "projects_completed", "students_reached", "attendance_before", "attendance_after",
+  ],
 };
 
-const RAW_TABLES = ["schools", "reporters", "assessments", "sessions", "media", "messages", "processed_messages", "regions"];
+const RAW_TABLES = [
+  "schools", "reporters", "assessments", "sessions", "media", "messages", "processed_messages", "regions",
+  "partners", "projects", "milestones", "attendance_reports",
+];
 
 type Status = "PASS" | "FAIL" | "WARN";
 const results: { status: Status; name: string; detail?: string }[] = [];

@@ -3,8 +3,8 @@
 Pont (French for "bridge") helps the PS43 Foundation find and respond to school needs in Cameroon.
 Field partners report a school's needs over WhatsApp or SMS. PS43 staff see them on a dashboard.
 
-This repo owns the database (schema, views, security, seed data) and, soon, the conversation
-engine and Twilio webhook. The staff dashboard is a separate Lovable project that reads from
+This repo owns the database (schema, views, security, seed data), the conversation engine,
+the Twilio webhook and a terminal simulator. The staff dashboard is a separate Lovable project that reads from
 this database. See [AGENTS.md](AGENTS.md) for the full design and rules, and
 [docs/DASHBOARD_CONTRACT.md](docs/DASHBOARD_CONTRACT.md) for what the dashboard can use.
 
@@ -92,6 +92,33 @@ Notes:
 - On a Twilio trial, SMS replies only reach phone numbers verified in your Twilio console.
 - Logs: Supabase dashboard > Edge Functions > twilio-webhook > Logs.
 
+## Prototype status
+
+This is a hackathon prototype built on fictional data.
+
+| Pipeline stage | In this prototype |
+|---|---|
+| Report | Real: WhatsApp/SMS bot, saved to Supabase, shown on the dashboard |
+| Assess | Real rules: `dashboard_readiness` scores every school live (Tier 0/1/2) |
+| Match | Real rules on mock partners: `dashboard_partner_matches` |
+| Deliver | Mock projects and photo milestones |
+| Prove | Mock weekly attendance and an impact summary |
+
+## What a real pilot would add
+
+- **Verified partner onboarding:** real partner sign-up, reference checks and a referral workflow, instead of mock partners.
+- **Project management:** staff create projects, assign partners and approve milestone photos from the dashboard.
+- **Attendance by SMS:** a short weekly SMS flow for headteachers to report attendance counts.
+- **School matching:** recognise when two reports are about the same school, instead of creating a new school each time.
+- **WhatsApp Business API:** a dedicated, verified number instead of the Twilio sandbox (no join code, no 3-day rejoin).
+- **Message templates:** approved WhatsApp templates so PS43 can message reporters first (reminders, follow-ups).
+- **Voice notes:** transcription and translation of voice notes for staff.
+- **Media moderation:** check photos before staff see them, and enforce "building only, no people".
+- **Data retention:** automatic deletion of raw phone numbers and old sessions, plus a way for reporters to ask for deletion.
+- **Stronger privacy:** per-partner access rules, an audit trail of staff actions, and a reviewed list of sensitive regions.
+- **Operations:** monitoring and alerts on the webhook, retries for failed media downloads, and backups.
+- **Offline field tools:** printed QR posters and USSD for areas with no data at all.
+
 ## Commands
 
 | Command | What it does |
@@ -102,14 +129,14 @@ Notes:
 | `npm run seed` | Reset and seed demo data in the linked project |
 | `npm run verify` | Same as `npx tsx scripts/verify-contract.ts` |
 | `npm run db:push` | Apply migrations to the linked project |
-| `npm run simulate` | Terminal chat with the bot (not built yet) |
+| `npm run simulate` | Chat with the bot in your terminal (`-- --live` saves to Supabase, `-- --sms` for SMS) |
 | `npm run functions:deploy` | Deploy the WhatsApp/SMS webhook Edge Function |
 
 ## Layout
 
 ```
 src/lib/          privacy utilities (phone hashing, coordinate rounding)
-src/engine/       conversation engine (placeholder for now) and bot strings
+src/engine/       conversation engine: flow config, bilingual strings, parsing
 src/messaging/    Twilio parsing, TwiML replies, signature check
 src/webhook/      webhook handler and Supabase store
 supabase/functions/twilio-webhook/  Edge Function entry point

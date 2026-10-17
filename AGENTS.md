@@ -50,12 +50,12 @@ If something production-grade would matter in real life, mention it in the READM
 
 | Component | What it does | Status |
 |---|---|---|
-| **A. Field intake + dashboard** | WhatsApp bot (SMS fallback) collects school needs; PS43 dashboard shows map, ranked needs | **Building now** |
-| B. Readiness score + recommender | Scores schools, recommends Tier 0/1/2 intervention | Later, maybe |
-| C. Trusted partner network | Referral-based partner profiles, trust earned via delivery | Pitch / roadmap |
-| D. Milestones + impact | Photo-verified milestones, weekly attendance by SMS | Pitch / roadmap |
+| **A. Field intake + dashboard** | WhatsApp bot (SMS fallback) collects school needs; PS43 dashboard shows map, ranked needs | **Built** |
+| B. Readiness score + recommender | Scores schools, recommends Tier 0/1/2 intervention | **Prototype:** live rules-based view (`dashboard_readiness`) |
+| C. Trusted partner network | Referral-based partner profiles, trust earned via delivery | **Prototype:** mock partners + live matching view |
+| D. Milestones + impact | Photo-verified milestones, weekly attendance by SMS | **Prototype:** mock projects, milestones, attendance |
 
-Build A. B, C and D can be shown with mock screens or slides if time allows.
+A is real end to end. B, C and D appear on the dashboard using mock data and simple rules (section 7), so the whole Report → Assess → Match → Deliver → Prove story can be demoed.
 
 ## 2. Repos and ownership
 
@@ -156,6 +156,11 @@ The dashboard is built against this section. Keep names stable.
 | `language` | `en`, `fr` |
 | `channel` | `whatsapp`, `sms` |
 | `media type` | `photo`, `audio` |
+| `tier` (B) | `tier0`, `tier1`, `tier2` |
+| `partner type` (C) | `ngo`, `community_org`, `contractor`, `supplier` |
+| `trust_level` (C) | `new`, `referred`, `proven` |
+| `project status` (D) | `planned`, `in_progress`, `completed` |
+| `milestone status` (D) | `pending`, `done` |
 
 ### Tables
 
@@ -215,6 +220,16 @@ The dashboard is built against this section. Keep names stable.
 If `processed_messages` or `messages` tables already exist from earlier work, leave them. They are not required.
 
 A new bot submission can simply create a new school row. Don't worry about matching or deduplicating schools for the prototype.
+
+The webhook saves a finished report with the internal RPC `submit_assessment(p_reporter_id, p_submission)` (service role only, not part of the dashboard contract). It writes the school, assessment and media in one transaction, applies the skipped-pin centroid fallback (section 8, step 14), and returns the `ref_code`.
+
+**Prototype mock tables (B, C, D).** Filled with fictional data by `npm run seed`:
+- **`partners`**: `id`, `name`, `type`, `region_code` (NULL = nationwide), `town`, `services` (text[] of `top_need` values), `trust_level`, `projects_completed`, `referred_by` (partner id), `joined_at`
+- **`projects`**: `id`, `school_id`, `partner_id`, `title`, `intervention` (a `top_need` value), `tier`, `status`, `budget_usd`, `started_at`, `completed_at`, `created_at`
+- **`milestones`**: `id`, `project_id`, `sort_order`, `title`, `status`, `due_date`, `completed_at`, `photo_path` (in `field-media`), `verified`
+- **`attendance_reports`**: `id`, `school_id`, `week_start`, `students_present`, `students_enrolled`, `created_at` (aggregate counts only)
+
+Readiness (B) has no table: it is computed live from each school's latest assessment by `dashboard_readiness`.
 
 ### Region seed data
 Regional capitals are used as centroids.
@@ -295,6 +310,37 @@ Views run with owner privileges so they can read the raw tables. The Supabase li
 - `type`
 - `storage_path`
 - `created_at`
+
+**Prototype pipeline views (B, C, D).** Same access rules as above.
+
+**`dashboard_readiness`** (B, one row per assessed school, live rules)
+- `school_id`, `school_name`, `region_code`, `region_name`, `is_sensitive`, `latest_assessment_id`
+- `building_points` (good 30, needs_repair 15, unsafe 0)
+- `power_points` (grid_reliable 30, solar 25, generator 15, grid_unreliable 10, none 0)
+- `connectivity_points` (good 20, weak 10, none 0)
+- `devices_points` (enough 20, few 10, none 0)
+- `score` (0 to 100)
+- `tier`: `tier0` if the building is unsafe or score < 40, `tier1` if score < 70, else `tier2`
+- `safety_first` (true when an unsafe building forced `tier0`)
+
+**`dashboard_partners`** (C)
+- `id`, `name`, `type`, `region_code`, `region_name`, `town`, `services`, `trust_level`, `projects_completed`, `referred_by_id`, `referred_by_name`, `joined_at`
+
+**`dashboard_partner_matches`** (C, up to 3 per school, live)
+- `school_id`, `partner_id`, `partner_name`, `partner_type`, `trust_level`, `projects_completed`, `same_region`, `need`, `match_rank`
+- Rule: partners offering the school's latest `top_need`, same region first, then nationwide, ranked by trust then delivery record.
+
+**`dashboard_projects`** (D)
+- `id`, `school_id`, `school_name`, `region_code`, `region_name`, `is_sensitive`, `partner_id`, `partner_name`, `title`, `intervention`, `tier`, `status`, `budget_usd`, `started_at`, `completed_at`, `milestones_total`, `milestones_done`
+
+**`dashboard_milestones`** (D)
+- `id`, `project_id`, `school_id`, `sort_order`, `title`, `status`, `due_date`, `completed_at`, `photo_path`, `verified`
+
+**`dashboard_attendance`** (D, one row per school per week)
+- `school_id`, `school_name`, `region_code`, `week_start`, `students_present`, `students_enrolled`, `attendance_rate`
+
+**`dashboard_impact_summary`** (D, exactly one row of headline numbers)
+- `school_count`, `assessment_count`, `verified_count`, `partner_count`, `proven_partner_count`, `projects_planned`, `projects_in_progress`, `projects_completed`, `students_reached`, `attendance_before`, `attendance_after`
 
 ### RPC
 - `set_assessment_verified(assessment_id uuid, verified boolean) returns void`
@@ -390,4 +436,4 @@ Lint and typecheck scripts are nice to have, not blockers.
 - IVR or voice flows.
 - Dashboard UI code in this repo.
 
-Partners (C) and milestones (D) can appear as mock screens or slides only.
+B, C and D are mock data and simple rules only. No real partner onboarding, project workflows, or attendance collection by SMS.
