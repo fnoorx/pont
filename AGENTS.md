@@ -8,3 +8,7 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Keep external school access isolated at `/live-schools` and the staff login at `/`; the operational pages use explicitly fictional session-only data because the external schema must remain untouched.
+- Keep simulation state in OperationsProvider and domain calculations in `src/lib/operations.ts` so navigation preserves edits and rules can be tested without UI rendering.
+- Use one shared OperationsShell with separate content routes for operations navigation, with leaf metadata on every page.
