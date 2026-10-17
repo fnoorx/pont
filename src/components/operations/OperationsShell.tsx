@@ -2,7 +2,7 @@ import { Link } from '@tanstack/react-router';
 import { useState, type ReactNode } from 'react';
 import { LayoutDashboard, MessageSquareText, Layers3, FolderKanban, ChartNoAxesCombined, Search, Bell, Menu, ChevronLeft, ChevronRight, ArrowUpRight, CircleHelp, Radio, X, Check, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import symbol from '@/assets/ps43-symbol-stacked.png';
+import symbol from '@/assets/ps43-logo.png';
 import { useOperations } from './OperationsProvider';
 import { ThemeToggle } from '@/components/ThemeToggle';
 const links=[{to:'/dashboard',label:'Overview',icon:LayoutDashboard},{to:'/partner-reports',label:'Partner Reports',icon:MessageSquareText},{to:'/needs',label:'Needs & Priorities',icon:Layers3},{to:'/projects',label:'Projects & Deployment',icon:FolderKanban},{to:'/impact',label:'Impact & Reports',icon:ChartNoAxesCombined}] as const;

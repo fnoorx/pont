@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { db } from "@/lib/ps43";
 import { Button } from "@/components/ui/button";
-import symbol from "@/assets/ps43-symbol-stacked.png";
+import symbol from "@/assets/ps43-logo.png";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 export const Route = createFileRoute("/auth")({
