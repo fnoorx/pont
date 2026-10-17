@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pont Live Demo</title>
+<meta name="description" content="Presentation view: the live Pont chat inside an iPhone frame, with a QR code to try it.">
+<style>
+  :root {
+    --bg1: #0f2a22;
+    --bg2: #06120e;
+    --ink: #f2f7f4;
+    --muted: #a9c2b6;
+    --accent: #25d366;
+    --frame: #1b1f22;
+    --frame-edge: #3a4146;
+    --screen-top: #008069;
+    --screen-bottom: #f0f2f5;
+  }
+  :root[data-theme="dark"] { --screen-top: #202c33; --screen-bottom: #202c33; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    color: var(--ink);
+    background: radial-gradient(1200px 800px at 30% 20%, var(--bg1), var(--bg2));
+    font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+  .stage {
+    height: 100vh; display: flex; align-items: center; justify-content: center; gap: 72px;
+    padding: 16px;
+  }
+
+  /* Phone is laid out at true iPhone size (393 x 852 points) and scaled to fit the window. */
+  .phone-wrap { width: calc(433px * var(--scale, 1)); height: calc(892px * var(--scale, 1)); flex: none; }
+  .phone {
+    width: 433px; height: 892px; transform: scale(var(--scale, 1)); transform-origin: top left;
+    position: relative; border-radius: 68px; padding: 20px;
+    background: var(--frame);
+    box-shadow: 0 0 0 2px var(--frame-edge), 0 0 0 9px #0c0e10, 0 40px 80px rgba(0, 0, 0, 0.55), inset 0 0 6px rgba(255,255,255,0.08);
+  }
+  .btn { position: absolute; width: 4px; background: #0c0e10; border-radius: 2px; }
+  .btn.action { left: -13px; top: 150px; height: 32px; }
+  .btn.vol-up { left: -13px; top: 215px; height: 62px; }
+  .btn.vol-down { left: -13px; top: 290px; height: 62px; }
+  .btn.power { right: -13px; top: 240px; height: 100px; }
+
+  .screen {
+    position: relative; width: 393px; height: 852px; border-radius: 50px; overflow: hidden;
+    background: var(--screen-top); display: flex; flex-direction: column;
+  }
+  .status {
+    height: 54px; flex: none; display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 34px 0 46px; color: #fff; font-weight: 600; font-size: 17px; letter-spacing: -0.2px;
+  }
+  .status .icons { display: flex; gap: 6px; align-items: center; }
+  .status svg { fill: #fff; display: block; }
+  .island {
+    position: absolute; top: 11px; left: 50%; transform: translateX(-50%);
+    width: 125px; height: 37px; border-radius: 20px; background: #000; z-index: 2;
+  }
+  iframe { flex: 1; width: 100%; border: 0; display: block; background: #efeae2; }
+  /* Room for the home indicator below the message bar, like a real iPhone. */
+  .bottom { height: 24px; flex: none; background: var(--screen-bottom); }
+  .home {
+    position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+    width: 134px; height: 5px; border-radius: 3px; background: rgba(0, 0, 0, 0.75); z-index: 2; pointer-events: none;
+  }
+  :root[data-theme="dark"] .home { background: rgba(255, 255, 255, 0.7); }
+
+  .side { max-width: 380px; }
+  .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+  .logo { width: 44px; height: 44px; border-radius: 12px; background: var(--accent); color: #063; display: grid; place-items: center; font-weight: 800; font-size: 22px; }
+  .brand b { font-size: 28px; letter-spacing: -0.5px; }
+  .brand small { display: block; color: var(--muted); font-size: 14px; }
+  h1 { font-size: 34px; line-height: 1.15; margin: 0 0 12px; letter-spacing: -0.6px; }
+  .lede { color: var(--muted); margin: 0 0 28px; }
+  .qr { background: #fff; padding: 14px; border-radius: 18px; width: 220px; }
+  .qr svg { display: block; width: 100%; height: auto; }
+  .scan { margin: 14px 0 4px; font-weight: 600; }
+  .url { color: var(--muted); font-size: 14px; font-family: ui-monospace, Menlo, monospace; }
+  .controls { margin-top: 26px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .controls button {
+    border: 1px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.06); color: var(--ink);
+    padding: 8px 14px; border-radius: 999px; font: inherit; font-size: 14px; cursor: pointer;
+  }
+  .controls button:hover { background: rgba(255,255,255,0.12); }
+
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    .stage { flex-direction: column; height: auto; gap: 32px; padding: 24px 16px 48px; }
+    .side { text-align: center; }
+    .brand { justify-content: center; }
+    .qr { margin: 0 auto; }
+    .controls { justify-content: center; }
+  }
+  /* Present mode: press P to hide the side panel. */
+  body.phone-only .side { display: none; }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="phone-wrap">
+    <div class="phone" aria-label="iPhone showing the Pont chat">
+      <span class="btn action"></span><span class="btn vol-up"></span><span class="btn vol-down"></span><span class="btn power"></span>
+      <div class="screen">
+        <div class="island"></div>
+        <div class="status">
+          <span id="clock">9:41</span>
+          <span class="icons" aria-hidden="true">
+            <svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+            <svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 2.4c2.3 0 4.4.9 6 2.4l1.3-1.4A10.4 10.4 0 0 0 8 .5C5.2.5 2.6 1.6.7 3.4L2 4.8a8.5 8.5 0 0 1 6-2.4zm0 3.8c1.3 0 2.5.5 3.4 1.3l1.3-1.4A6.7 6.7 0 0 0 8 4.3c-1.8 0-3.4.7-4.7 1.8l1.3 1.4c.9-.8 2.1-1.3 3.4-1.3zM8 10l2-2.1a2.9 2.9 0 0 0-4 0z"/></svg>
+            <svg width="27" height="13" viewBox="0 0 27 13"><rect x="0.5" y="0.5" width="23" height="12" rx="3.5" fill="none" stroke="#fff" stroke-opacity="0.45"/><rect x="2" y="2" width="18" height="9" rx="2"/><path d="M25 4.5v4c.8-.3 1.3-1.1 1.3-2s-.5-1.7-1.3-2z" fill-opacity="0.45"/></svg>
+          </span>
+        </div>
+        <iframe id="chat" title="Pont chat" src="./index.html?theme=light" allow="geolocation"></iframe>
+        <div class="bottom"></div>
+        <div class="home"></div>
+      </div>
+    </div>
+  </div>
+
+  <aside class="side">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">P</div>
+      <div><b>Pont</b><small>by Team 30 for the PS43 Foundation</small></div>
+    </div>
+    <h1>Report a school's needs in two minutes.</h1>
+    <p class="lede">A chat in English or French that works on any phone. Every report goes straight to PS43's dashboard, scored, ranked and matched to trusted partners.</p>
+    <div class="qr" role="img" aria-label="QR code to open the Pont chat"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 29 29" shape-rendering="crispEdges"><path fill="#ffffff" d="M0 0h29v29H0z"/><path stroke="#000000" d="M0 0.5h7m2 0h1m2 0h2m3 0h4m1 0h7M0 1.5h1m5 0h1m2 0h1m2 0h5m1 0h1m3 0h1m5 0h1M0 2.5h1m1 0h3m1 0h1m1 0h1m5 0h3m2 0h2m1 0h1m1 0h3m1 0h1M0 3.5h1m1 0h3m1 0h1m1 0h1m1 0h3m2 0h1m1 0h1m1 0h1m2 0h1m1 0h3m1 0h1M0 4.5h1m1 0h3m1 0h1m1 0h1m1 0h1m2 0h1m2 0h4m2 0h1m1 0h3m1 0h1M0 5.5h1m5 0h1m1 0h1m1 0h1m2 0h5m4 0h1m5 0h1M0 6.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M8 7.5h4m1 0h1m2 0h1m2 0h1M0 8.5h1m1 0h5m3 0h3m1 0h2m1 0h2m3 0h5M0 9.5h3m1 0h2m1 0h3m1 0h1m4 0h5m1 0h3m3 0h1M1 10.5h6m3 0h2m3 0h1m1 0h1m2 0h2m1 0h1M3 11.5h1m1 0h1m5 0h2m1 0h3m3 0h4m1 0h1m1 0h1M0 12.5h1m4 0h5m1 0h2m2 0h1m1 0h1m2 0h1m4 0h2M1 13.5h1m1 0h3m1 0h1m2 0h1m1 0h3m1 0h1m2 0h2m1 0h3m3 0h1M2 14.5h1m2 0h3m2 0h7m1 0h1m2 0h3m1 0h2M0 15.5h5m4 0h2m1 0h2m1 0h1m2 0h1m2 0h1m1 0h1m3 0h1M0 16.5h4m1 0h3m2 0h1m3 0h1m2 0h1m1 0h1m1 0h1m3 0h2M0 17.5h5m2 0h1m3 0h2m3 0h1m2 0h6m1 0h1m1 0h1M0 18.5h1m5 0h3m3 0h1m2 0h1m1 0h2m3 0h1m3 0h1M0 19.5h1m1 0h2m1 0h1m8 0h1m5 0h4m3 0h1M0 20.5h1m2 0h4m1 0h1m2 0h1m3 0h4m1 0h5m1 0h3M8 21.5h7m1 0h1m2 0h2m3 0h5M0 22.5h7m5 0h4m3 0h2m1 0h1m1 0h3M0 23.5h1m5 0h1m1 0h1m1 0h1m1 0h2m4 0h3m3 0h1M0 24.5h1m1 0h3m1 0h1m1 0h1m2 0h2m1 0h2m1 0h2m1 0h5m1 0h1M0 25.5h1m1 0h3m1 0h1m1 0h1m1 0h1m2 0h1m2 0h1m2 0h1m5 0h4M0 26.5h1m1 0h3m1 0h1m1 0h1m6 0h4m1 0h8M0 27.5h1m5 0h1m2 0h1m1 0h1m1 0h4m3 0h1m4 0h1m1 0h1M0 28.5h7m1 0h1m3 0h2m3 0h3m2 0h3m1 0h1"/></svg></div>
+    <p class="scan">Scan to try it yourself</p>
+    <div class="url">fnoorx.github.io/ps43-bridge</div>
+    <div class="controls">
+      <button id="restart" type="button">Restart chat</button>
+      <button id="theme" type="button">Dark mode</button>
+      <button id="hide" type="button">Phone only (P)</button>
+    </div>
+  </aside>
+</div>
+
+<script>
+(() => {
+  const root = document.documentElement;
+  const chat = document.getElementById("chat");
+
+  // Scale the phone to fit the window height (and width on small screens).
+  function fit() {
+    const narrow = innerWidth <= 900;
+    const byHeight = (innerHeight - 32) / 892;
+    const byWidth = (narrow ? innerWidth - 32 : innerWidth * 0.6) / 433;
+    root.style.setProperty("--scale", Math.min(1.15, byHeight, byWidth).toFixed(3));
+  }
+  addEventListener("resize", fit);
+  fit();
+
+  // Live clock in the status bar.
+  const clock = document.getElementById("clock");
+  const tick = () => { clock.textContent = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }).replace(/\s?[AP]M$/i, ""); };
+  tick();
+  setInterval(tick, 15000);
+
+  // Restart: forget this browser's chat (same origin as the iframe) and reload it.
+  document.getElementById("restart").addEventListener("click", () => {
+    try { ["pont.clientId", "pont.transcript"].forEach((k) => localStorage.removeItem(k)); } catch { /* ignore */ }
+    chat.src = chat.src;
+  });
+
+  let dark = false;
+  document.getElementById("theme").addEventListener("click", (e) => {
+    dark = !dark;
+    if (dark) root.dataset.theme = "dark"; else delete root.dataset.theme;
+    e.currentTarget.textContent = dark ? "Light mode" : "Dark mode";
+    chat.src = `./index.html?theme=${dark ? "dark" : "light"}`;
+  });
+
+  const togglePanel = () => { document.body.classList.toggle("phone-only"); fit(); };
+  document.getElementById("hide").addEventListener("click", togglePanel);
+  addEventListener("keydown", (e) => { if ((e.key === "p" || e.key === "P") && !e.metaKey && !e.ctrlKey) togglePanel(); });
+})();
+</script>
+</body>
+</html>

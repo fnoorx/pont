@@ -102,6 +102,10 @@ location.
 
 **Live:** https://fnoorx.github.io/ps43-bridge/ (published from `web/` by GitHub Pages on every push
 that changes it, see `.github/workflows/pages.yml`).
+
+**Presentation view:** https://fnoorx.github.io/ps43-bridge/present.html shows the same live chat
+inside an iPhone frame, with a QR code so judges can try it. Click the phone to drive the chat;
+"Restart chat" starts fresh, "Dark mode" switches themes, and **P** hides the side panel.
 Set `WEB_CHAT_URL` in `.env` to its public address, then `npm run demo:card` makes a QR for it.
 To try it locally: `cd web && python3 -m http.server 8765` and open http://localhost:8765.
 
