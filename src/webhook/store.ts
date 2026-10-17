@@ -3,9 +3,10 @@
 import type { Channel, ReporterSnapshot, ReporterUpdate, Session, Submission } from "../engine/types.ts";
 
 export interface NewReporter {
-  phoneE164: string;
+  /** NULL for the web channel, which has no phone number. */
+  phoneE164: string | null;
   phoneHash: string;
-  phoneLast4: string;
+  phoneLast4: string | null;
   channel: Channel;
 }
 

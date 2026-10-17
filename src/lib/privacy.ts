@@ -18,6 +18,15 @@ export async function hashPhone(e164: string, salt: string): Promise<string> {
   return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+/** Salted SHA-256 of a web chat browser id (web reporters have no phone number). */
+export async function hashWebClient(clientId: string, salt: string): Promise<string> {
+  if (!/^[0-9a-f-]{16,64}$/i.test(clientId)) throw new Error("Invalid web client id");
+  if (!salt) throw new Error("A non-empty salt is required");
+  const data = new TextEncoder().encode(`${salt}web:${clientId.toLowerCase()}`);
+  const digest = await globalThis.crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 /** Last 4 digits of an E.164 phone number. */
 export function last4(e164: string): string {
   assertE164(e164);

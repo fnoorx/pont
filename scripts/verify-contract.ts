@@ -15,7 +15,7 @@ const VIEW_COLUMNS: Record<string, string[]> = {
   dashboard_assessments: [
     "id", "ref_code", "school_id", "school_name", "region_code", "region_name", "is_sensitive", "reporter_role",
     "reporter_last4", "language", "enrollment_band", "building_condition", "power_source", "connectivity",
-    "devices", "top_need", "notes", "verified", "submitted_at",
+    "devices", "top_need", "notes", "verified", "submitted_at", "reporter_channel",
   ],
   dashboard_region_stats: [
     "region_code", "region_name", "centroid_lat", "centroid_lng", "is_sensitive", "school_count", "unsafe_count",

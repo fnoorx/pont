@@ -2,7 +2,7 @@
 // so the placeholder engine can be swapped for the real one without touching the handler.
 // Pure data only: no I/O, no Node-only or Deno-only types.
 
-export type Channel = "whatsapp" | "sms";
+export type Channel = "whatsapp" | "sms" | "web";
 export type Language = "en" | "fr";
 export type Role = "headteacher" | "teacher" | "partner" | "community";
 export type SessionStatus = "active" | "completed" | "abandoned";

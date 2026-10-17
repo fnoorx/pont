@@ -1,18 +1,70 @@
-// npm run demo:card: printable bilingual card with a QR code that opens WhatsApp with the
-// sandbox join message ready to send. Writes demo/join-card.html (git-ignored).
+// npm run demo:card: printable bilingual card with a QR code for judges.
+// If WEB_CHAT_URL is set, the QR opens the WhatsApp-style web chat (no join step).
+// Otherwise it opens WhatsApp with the Twilio sandbox join message ready to send.
+// Writes demo/join-card.html (git-ignored).
 import { mkdirSync, writeFileSync } from "node:fs";
 import QRCode from "qrcode";
 import { loadEnv } from "./env.ts";
 
-const env = loadEnv(["TWILIO_WHATSAPP_NUMBER", "TWILIO_SANDBOX_JOIN_CODE"]);
-const code = env.TWILIO_SANDBOX_JOIN_CODE.replace(/^join\s+/i, "").trim();
-const joinMessage = `join ${code}`;
-const number = env.TWILIO_WHATSAPP_NUMBER;
-const link = `https://wa.me/${number.slice(1)}?text=${encodeURIComponent(joinMessage)}`;
-
 const escape = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-const qr = await QRCode.toString(link, { type: "svg", margin: 1, errorCorrectionLevel: "M", width: 320 });
+interface CardCopy {
+  link: string;
+  fallback: string;
+  stepsEn: string[];
+  stepsFr: string[];
+}
+
+function webCard(url: string): CardCopy {
+  return {
+    link: url,
+    fallback: `No camera? Open <b>${escape(url)}</b><br>Pas de caméra ? Ouvrez <b>${escape(url)}</b>`,
+    stepsEn: [
+      "Scan the code with your phone camera. The chat opens straight away, no app or sign-up.",
+      "Tap your answers (or type the number). It takes about 2 minutes.",
+      "Add a photo of a building if you like, or tap Skip.",
+      "Watch your school appear on our dashboard.",
+    ],
+    stepsFr: [
+      "Scannez le code avec l'appareil photo. Le chat s'ouvre tout de suite, sans application ni inscription.",
+      "Touchez vos réponses (ou tapez le chiffre). Environ 2 minutes.",
+      "Ajoutez une photo d'un bâtiment si vous voulez, ou touchez Passer.",
+      "Regardez votre école apparaître sur notre tableau de bord.",
+    ],
+  };
+}
+
+function whatsappCard(number: string, rawCode: string): CardCopy {
+  const joinMessage = `join ${rawCode.replace(/^join\s+/i, "").trim()}`;
+  return {
+    link: `https://wa.me/${number.slice(1)}?text=${encodeURIComponent(joinMessage)}`,
+    fallback:
+      `No camera? Send <b>${escape(joinMessage)}</b> to <b>${escape(number)}</b> on WhatsApp.<br>` +
+      `Pas de caméra ? Envoyez <b>${escape(joinMessage)}</b> au <b>${escape(number)}</b> sur WhatsApp.`,
+    stepsEn: [
+      "Scan the code with your phone camera. WhatsApp opens with a message ready.",
+      "Press send. You will get a confirmation from Twilio.",
+      "Send <b>Hi</b> and answer the questions with numbers. It takes about 3 minutes.",
+      "Watch your school appear on our dashboard.",
+    ],
+    stepsFr: [
+      "Scannez le code avec l'appareil photo. WhatsApp s'ouvre avec un message prêt.",
+      "Appuyez sur envoyer. Twilio vous confirme l'inscription.",
+      "Envoyez <b>Bonjour</b> et répondez avec des chiffres. Environ 3 minutes.",
+      "Regardez votre école apparaître sur notre tableau de bord.",
+    ],
+  };
+}
+
+const copy = process.env.WEB_CHAT_URL
+  ? webCard(loadEnv(["WEB_CHAT_URL"]).WEB_CHAT_URL)
+  : (() => {
+      const env = loadEnv(["TWILIO_WHATSAPP_NUMBER", "TWILIO_SANDBOX_JOIN_CODE"]);
+      return whatsappCard(env.TWILIO_WHATSAPP_NUMBER, env.TWILIO_SANDBOX_JOIN_CODE);
+    })();
+
+const qr = await QRCode.toString(copy.link, { type: "svg", margin: 1, errorCorrectionLevel: "M", width: 320 });
+const list = (steps: string[]) => steps.map((s) => `        <li>${s}</li>`).join("\n");
 
 const html = `<!doctype html>
 <html lang="en">
@@ -29,7 +81,7 @@ const html = `<!doctype html>
   .tag { color: var(--muted); margin: 4px 0 24px; }
   .qr { width: 300px; max-width: 80vw; margin: 0 auto; }
   .qr svg { width: 100%; height: auto; display: block; }
-  .fallback { margin: 12px 0 28px; color: var(--muted); font-size: 15px; }
+  .fallback { margin: 12px 0 28px; color: var(--muted); font-size: 15px; overflow-wrap: anywhere; }
   .fallback b { color: var(--ink); font-family: ui-monospace, Menlo, monospace; }
   .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; text-align: left; border-top: 1px solid var(--line); padding-top: 20px; }
   @media (max-width: 640px) { .cols { grid-template-columns: 1fr; } }
@@ -37,38 +89,30 @@ const html = `<!doctype html>
   ol { margin: 0; padding-left: 20px; }
   li { margin: 6px 0; }
   .note { margin-top: 24px; font-size: 13px; color: var(--muted); }
-  @media print { .card { margin: 0 auto; } }
 </style>
 </head>
 <body>
 <main class="card">
   <h1>Try Pont</h1>
-  <p class="tag">Report a school's needs on WhatsApp &middot; Signalez les besoins d'une école sur WhatsApp</p>
-  <div class="qr" role="img" aria-label="QR code that opens WhatsApp">${qr}</div>
-  <p class="fallback">No camera? Send <b>${escape(joinMessage)}</b> to <b>${escape(number)}</b> on WhatsApp.<br>
-  Pas de caméra ? Envoyez <b>${escape(joinMessage)}</b> au <b>${escape(number)}</b> sur WhatsApp.</p>
+  <p class="tag">Report a school's needs in a chat &middot; Signalez les besoins d'une école par chat</p>
+  <div class="qr" role="img" aria-label="QR code">${qr}</div>
+  <p class="fallback">${copy.fallback}</p>
   <div class="cols">
     <section>
       <h2>English</h2>
       <ol>
-        <li>Scan the code with your phone camera. WhatsApp opens with a message ready.</li>
-        <li>Press send. You will get a confirmation from Twilio.</li>
-        <li>Send <b>Hi</b> and answer the questions with numbers. It takes about 3 minutes.</li>
-        <li>Watch your school appear on our dashboard.</li>
+${list(copy.stepsEn)}
       </ol>
     </section>
     <section>
       <h2>Français</h2>
       <ol>
-        <li>Scannez le code avec l'appareil photo. WhatsApp s'ouvre avec un message prêt.</li>
-        <li>Appuyez sur envoyer. Twilio vous confirme l'inscription.</li>
-        <li>Envoyez <b>Bonjour</b> et répondez avec des chiffres. Environ 3 minutes.</li>
-        <li>Regardez votre école apparaître sur notre tableau de bord.</li>
+${list(copy.stepsFr)}
       </ol>
     </section>
   </div>
-  <p class="note">Demo only: please use a made-up school. We show just the last 4 digits of your number, and nothing about students.<br>
-  Démo seulement : utilisez une école imaginaire. Nous affichons seulement les 4 derniers chiffres de votre numéro, et rien sur les élèves.</p>
+  <p class="note">Demo only: please use a made-up school. Nothing about students is collected.<br>
+  Démo seulement : utilisez une école imaginaire. Rien n'est collecté sur les élèves.</p>
 </main>
 </body>
 </html>
@@ -77,4 +121,4 @@ const html = `<!doctype html>
 mkdirSync("demo", { recursive: true });
 writeFileSync("demo/join-card.html", html);
 console.log("Wrote demo/join-card.html");
-console.log(`QR opens: ${link}`);
+console.log(`QR opens: ${copy.link}`);

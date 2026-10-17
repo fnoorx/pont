@@ -92,7 +92,7 @@ One row per report. A school can have many; they are never overwritten. Use this
 | `region_name` | string | |
 | `is_sensitive` | boolean | |
 | `reporter_role` | string? | Value set below |
-| `reporter_last4` | string? | Last 4 digits of the reporter's phone, for spotting repeat reporters |
+| `reporter_last4` | string? | Last 4 digits of the reporter's phone, for spotting repeat reporters. NULL for web chat reports (no phone) |
 | `language` | string? | Language the reporter used (`en` / `fr`) |
 | `enrollment_band` | string | |
 | `building_condition` | string | |
@@ -103,6 +103,7 @@ One row per report. A school can have many; they are never overwritten. Use this
 | `notes` | string? | Free text from the reporter, may be French or English |
 | `verified` | boolean | Defaults to false. Staff set it with the RPC |
 | `submitted_at` | timestamp | |
+| `reporter_channel` | string? | How it was reported: `whatsapp` WhatsApp, `sms` SMS, `web` Web chat (demo). Added later, at the end |
 
 ### `dashboard_region_stats`
 

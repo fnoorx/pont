@@ -19,6 +19,7 @@ const schemas = {
   // Not secret: shown on the judge join card.
   TWILIO_WHATSAPP_NUMBER: z.string().regex(/^\+[1-9]\d{6,14}$/, "E.164, e.g. +14155238886"),
   TWILIO_SANDBOX_JOIN_CODE: z.string().trim().min(3),
+  WEB_CHAT_URL: z.url(),
 } as const;
 
 type Key = keyof typeof schemas;

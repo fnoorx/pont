@@ -92,19 +92,33 @@ Notes:
 - On a Twilio trial, SMS replies only reach phone numbers verified in your Twilio console.
 - Logs: Supabase dashboard > Edge Functions > twilio-webhook > Logs.
 
+## Web chat (what judges use)
+
+`web/index.html` is a WhatsApp-style chat page. Judges scan a QR code and the bot greets them
+in under 2 seconds, with no app, sign-up or join code. It talks to the `web-chat` Edge Function,
+which runs the same engine and database as the WhatsApp webhook, so reports appear on the
+dashboard live. Numbered answers become tappable buttons, and the + button sends a photo or
+location.
+
+It is a single static file, so any free static host works (for example GitHub Pages).
+Set `WEB_CHAT_URL` in `.env` to its public address, then `npm run demo:card` makes a QR for it.
+To try it locally: `cd web && python3 -m http.server 8765` and open http://localhost:8765.
+
+Why not real WhatsApp for judges? Twilio's free trial blocks setting the sandbox webhook, and
+Meta's free test number only replies to 5 pre-registered phones. The real WhatsApp webhook
+(`twilio-webhook`) is still built and works on a paid or classic Twilio sandbox.
+
 ## Demo day checklist
 
 1. **Reset the data** (removes test submissions, reloads the fictional schools):
    `npm run demo:reset` (same as `npm run seed`)
-2. **Print or show the join card.** Add `TWILIO_WHATSAPP_NUMBER` and `TWILIO_SANDBOX_JOIN_CODE`
-   to `.env`, then run `npm run demo:card` and open `demo/join-card.html`. The QR opens
-   WhatsApp with the join message ready.
+2. **Print or show the join card.** Set `WEB_CHAT_URL` in `.env`, run `npm run demo:card`, and
+   open `demo/join-card.html`. The QR opens the web chat directly.
 3. **Warm up the webhook** a minute before judging, so the first judge does not wait for a
    cold start (about 2 seconds). Any request wakes it; this one is rejected harmlessly:
-   `curl -s -o /dev/null -X POST https://<project-ref>.supabase.co/functions/v1/twilio-webhook`
-4. **Rejoin the sandbox** from your own phone if you have not used it for 3 days.
-5. **Check the dashboard is logged in** and refreshing (it polls every few seconds).
-6. **Have a fallback:** `npm run simulate -- --live` on a laptop does the same flow without
+   `curl -s -o /dev/null -X POST https://<project-ref>.supabase.co/functions/v1/web-chat`
+4. **Check the dashboard is logged in** and refreshing (it polls every few seconds).
+5. **Have a fallback:** `npm run simulate -- --live` on a laptop does the same flow without
    a phone, and the report still appears on the dashboard.
 
 Timing: the server answers each message in about 0.6 seconds (17 replies, about 12 seconds in
@@ -149,7 +163,7 @@ This is a hackathon prototype built on fictional data.
 | `npm run verify` | Same as `npx tsx scripts/verify-contract.ts` |
 | `npm run db:push` | Apply migrations to the linked project |
 | `npm run simulate` | Chat with the bot in your terminal (`-- --live` saves to Supabase, `-- --sms` for SMS) |
-| `npm run functions:deploy` | Deploy the WhatsApp/SMS webhook Edge Function |
+| `npm run functions:deploy` | Deploy the Edge Functions (`twilio-webhook` and `web-chat`) |
 | `npm run demo:reset` | Reset to the fictional demo data before judging (alias of `seed`) |
 | `npm run demo:card` | Build the printable judge join card with QR code (`demo/join-card.html`) |
 
@@ -160,7 +174,9 @@ src/lib/          privacy utilities (phone hashing, coordinate rounding)
 src/engine/       conversation engine: flow config, bilingual strings, parsing
 src/messaging/    Twilio parsing, TwiML replies, signature check
 src/webhook/      webhook handler and Supabase store
-supabase/functions/twilio-webhook/  Edge Function entry point
+src/webchat/      web chat endpoint handler
+web/              WhatsApp-style web chat page (static, one file)
+supabase/functions/  Edge Function entry points (twilio-webhook, web-chat)
 scripts/          seed, verify-contract, simulate
 supabase/         config and migrations
 docs/             dashboard contract

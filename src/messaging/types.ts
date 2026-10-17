@@ -10,7 +10,7 @@ export interface ProviderMedia {
 
 export interface ParsedInbound {
   messageSid: string;
-  /** Sender in E.164, with any channel prefix (e.g. "whatsapp:") removed. */
+  /** Sender in E.164 (prefix like "whatsapp:" removed), or the browser id for the web channel. */
   from: string;
   channel: Channel;
   text: string;

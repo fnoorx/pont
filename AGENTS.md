@@ -154,7 +154,7 @@ The dashboard is built against this section. Keep names stable.
 | `enrollment_band` | `lt100`, `100_300`, `300_600`, `gt600` |
 | `role` | `headteacher`, `teacher`, `partner`, `community` |
 | `language` | `en`, `fr` |
-| `channel` | `whatsapp`, `sms` |
+| `channel` | `whatsapp`, `sms`, `web` |
 | `media type` | `photo`, `audio` |
 | `tier` (B) | `tier0`, `tier1`, `tier2` |
 | `partner type` (C) | `ngo`, `community_org`, `contractor`, `supplier` |
@@ -290,6 +290,7 @@ Views run with owner privileges so they can read the raw tables. The Supabase li
 - `notes`
 - `verified`
 - `submitted_at`
+- `reporter_channel` (`whatsapp`, `sms` or `web`)
 
 **`dashboard_region_stats`** (one row per region, including regions with zero schools)
 - `region_code`
@@ -380,6 +381,10 @@ Views run with owner privileges so they can read the raw tables. The Supabase li
 After submit, reply with a short thank-you and the `ref_code`.
 
 **Demo target:** completable in under 3 minutes.
+
+### Web chat (judge demo)
+
+Twilio's free trial no longer lets us point the WhatsApp sandbox at our webhook, and we are not paying for anything. So judges use a **WhatsApp-style web chat** (`web/index.html`) opened from a QR code: no app, no join step, greeting in under 2 seconds. It calls the `web-chat` Edge Function, which runs the same engine and database as the Twilio webhook. Web reporters have no phone number: they are identified by a salted hash of a random browser id, and `phone_e164` / `phone_last4` are NULL. Numbered options are shown as tappable buttons.
 
 ## 9. Architecture (keep it light)
 

@@ -12,7 +12,7 @@ import {
   type Session,
   type StoredMedia,
 } from "../engine/types.ts";
-import { hashPhone, last4 } from "../lib/privacy.ts";
+import { hashPhone, hashWebClient, last4 } from "../lib/privacy.ts";
 import { toGsm7 } from "../messaging/sms.ts";
 import { verifyTwilioSignature } from "../messaging/twilioSignature.ts";
 import type { MessagingProvider, ParsedInbound, ProviderMedia } from "../messaging/types.ts";
@@ -125,10 +125,13 @@ export function createInboundProcessor(deps: ProcessorDeps): (parsed: ParsedInbo
 
     let language: Language | null = null;
     try {
+      const isWeb = parsed.channel === "web";
       const reporter: ReporterSnapshot = await store.findOrCreateReporter({
-        phoneE164: parsed.from,
-        phoneHash: await hashPhone(parsed.from, deps.phoneHashSalt),
-        phoneLast4: last4(parsed.from),
+        phoneE164: isWeb ? null : parsed.from,
+        phoneHash: isWeb
+          ? await hashWebClient(parsed.from, deps.phoneHashSalt)
+          : await hashPhone(parsed.from, deps.phoneHashSalt),
+        phoneLast4: isWeb ? null : last4(parsed.from),
         channel: parsed.channel,
       });
       language = reporter.language;

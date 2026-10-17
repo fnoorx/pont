@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#008069">
+<title>Pont Chat</title>
+<meta name="description" content="Report a school's needs to the PS43 Foundation. A WhatsApp-style demo of the Pont bot.">
+<style>
+  :root {
+    --header: #008069;
+    --header-ink: #ffffff;
+    --chat-bg: #efeae2;
+    --dots: rgba(0, 0, 0, 0.035);
+    --in: #ffffff;
+    --out: #d9fdd3;
+    --ink: #111b21;
+    --muted: #667781;
+    --chip: #ffffff;
+    --chip-ink: #008069;
+    --chip-border: #d1d7db;
+    --bar: #f0f2f5;
+    --input: #ffffff;
+    --send: #008069;
+    --tick: #53bdeb;
+    --banner: #fff7d6;
+    --banner-ink: #54656f;
+    --error: #d93025;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --header: #202c33;
+      --header-ink: #e9edef;
+      --chat-bg: #0b141a;
+      --dots: rgba(255, 255, 255, 0.025);
+      --in: #202c33;
+      --out: #005c4b;
+      --ink: #e9edef;
+      --muted: #8696a0;
+      --chip: #202c33;
+      --chip-ink: #00a884;
+      --chip-border: #2a3942;
+      --bar: #202c33;
+      --input: #2a3942;
+      --send: #00a884;
+      --banner: #182229;
+      --banner-ink: #8696a0;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--chat-bg);
+    color: var(--ink);
+    font: 15px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .app { display: flex; flex-direction: column; height: 100dvh; max-width: 720px; margin: 0 auto; background: var(--chat-bg); }
+
+  header {
+    display: flex; align-items: center; gap: 12px;
+    padding: calc(10px + env(safe-area-inset-top)) 12px 10px 16px;
+    background: var(--header); color: var(--header-ink);
+  }
+  .avatar {
+    width: 40px; height: 40px; border-radius: 50%; flex: none;
+    display: grid; place-items: center;
+    background: #25d366; color: #fff; font-weight: 700; font-size: 18px;
+  }
+  .who { flex: 1; min-width: 0; }
+  .who b { display: block; font-size: 16px; font-weight: 600; }
+  .who small { display: block; font-size: 13px; opacity: 0.85; }
+  .icon-btn {
+    width: 40px; height: 40px; border: 0; border-radius: 50%; background: transparent; color: inherit;
+    display: grid; place-items: center; cursor: pointer;
+  }
+  .icon-btn:active { background: rgba(255, 255, 255, 0.15); }
+  .icon-btn svg { width: 22px; height: 22px; fill: currentColor; }
+
+  .banner {
+    margin: 8px auto 0; padding: 6px 12px; max-width: 92%;
+    background: var(--banner); color: var(--banner-ink);
+    border-radius: 8px; font-size: 12.5px; text-align: center;
+  }
+
+  main {
+    flex: 1; overflow-y: auto; padding: 8px 12px 12px;
+    background-image: radial-gradient(var(--dots) 1px, transparent 1px);
+    background-size: 18px 18px;
+  }
+  .day { text-align: center; margin: 10px 0; }
+  .day span { background: var(--in); color: var(--muted); font-size: 12px; padding: 4px 10px; border-radius: 8px; box-shadow: 0 1px 0.5px rgba(0,0,0,0.13); }
+
+  .msg { display: flex; margin: 3px 0; }
+  .msg.out { justify-content: flex-end; }
+  .bubble {
+    position: relative; max-width: 82%; padding: 6px 8px 6px 9px;
+    border-radius: 8px; background: var(--in);
+    box-shadow: 0 1px 0.5px rgba(0, 0, 0, 0.13);
+    white-space: pre-wrap; overflow-wrap: anywhere;
+  }
+  .msg.in .bubble { border-top-left-radius: 0; }
+  .msg.out .bubble { background: var(--out); border-top-right-radius: 0; }
+  .bubble img { display: block; max-width: 100%; border-radius: 6px; margin-bottom: 4px; }
+  .meta { float: right; margin: 6px 0 -4px 10px; font-size: 11px; color: var(--muted); display: inline-flex; align-items: center; gap: 3px; }
+  .ticks { width: 16px; height: 11px; fill: var(--muted); }
+  .ticks.read { fill: var(--tick); }
+  .failed { color: var(--error); font-size: 12px; margin-top: 2px; cursor: pointer; text-align: right; }
+
+  .typing .bubble { display: inline-flex; gap: 4px; padding: 12px 14px; }
+  .typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); opacity: 0.5; animation: blink 1.2s infinite; }
+  .typing i:nth-child(2) { animation-delay: 0.2s; }
+  .typing i:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes blink { 0%, 80%, 100% { opacity: 0.25; } 40% { opacity: 0.9; } }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 12px 2px; }
+  .chips:empty { display: none; }
+  .chip {
+    border: 1px solid var(--chip-border); background: var(--chip); color: var(--chip-ink);
+    border-radius: 18px; padding: 7px 13px; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer;
+  }
+  .chip:active { filter: brightness(0.95); }
+
+  .bar {
+    display: flex; align-items: flex-end; gap: 6px;
+    padding: 6px 8px calc(8px + env(safe-area-inset-bottom));
+    background: var(--bar);
+  }
+  .field {
+    flex: 1; display: flex; align-items: flex-end; gap: 2px;
+    background: var(--input); border-radius: 22px; padding: 2px 4px 2px 6px; min-height: 44px;
+  }
+  .field .icon-btn { color: var(--muted); width: 38px; height: 38px; flex: none; }
+  textarea {
+    flex: 1; border: 0; outline: 0; resize: none; background: transparent; color: var(--ink);
+    font: inherit; font-size: 16px; padding: 10px 4px; max-height: 120px;
+  }
+  .send {
+    width: 44px; height: 44px; border-radius: 50%; border: 0; flex: none;
+    background: var(--send); color: #fff; display: grid; place-items: center; cursor: pointer;
+  }
+  .send svg { width: 20px; height: 20px; fill: currentColor; }
+  .send:disabled { opacity: 0.6; }
+
+  .sheet {
+    position: fixed; inset: auto 0 0 0; max-width: 720px; margin: 0 auto;
+    display: none; gap: 24px; justify-content: center;
+    padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+    background: var(--bar); border-radius: 16px 16px 0 0; box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+  }
+  .sheet.open { display: flex; }
+  .sheet button { border: 0; background: none; color: var(--ink); font: inherit; font-size: 13px; display: grid; justify-items: center; gap: 6px; cursor: pointer; }
+  .sheet .round { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; color: #fff; }
+  .sheet .round svg { width: 26px; height: 26px; fill: currentColor; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%);
+    background: rgba(17, 27, 33, 0.9); color: #fff; padding: 8px 14px; border-radius: 18px; font-size: 13px;
+    opacity: 0; transition: opacity 0.2s; pointer-events: none; max-width: 90%; text-align: center;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="avatar" aria-hidden="true">P</div>
+    <div class="who">
+      <b>Pont · PS43 Foundation</b>
+      <small id="status">online</small>
+    </div>
+    <button class="icon-btn" id="newChat" aria-label="Start a new chat" title="New chat">
+      <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+    </button>
+  </header>
+
+  <main id="chat" aria-live="polite">
+    <div class="banner">Demo: a WhatsApp-style version of the Pont bot. Please use a made-up school.<br>Démo : utilisez une école imaginaire.</div>
+    <div class="day"><span>Today</span></div>
+  </main>
+
+  <div class="chips" id="chips"></div>
+
+  <div class="bar">
+    <div class="field">
+      <button class="icon-btn" id="attach" aria-label="Attach photo or location" title="Photo or location">
+        <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+      </button>
+      <textarea id="input" rows="1" placeholder="Message" aria-label="Message" enterkeyhint="send"></textarea>
+    </div>
+    <button class="send" id="send" aria-label="Send">
+      <svg viewBox="0 0 24 24"><path d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+    </button>
+  </div>
+</div>
+
+<div class="sheet" id="sheet" role="dialog" aria-label="Attach">
+  <button id="pickPhoto"><span class="round" style="background:#7f66ff"><svg viewBox="0 0 24 24"><path d="M12 15.2A3.2 3.2 0 1 0 12 8.8a3.2 3.2 0 0 0 0 6.4zM9 2 7.17 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3.17L15 2H9z"/></svg></span>Photo</button>
+  <button id="pickLocation"><span class="round" style="background:#1fa855"><svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg></span>Location</button>
+</div>
+<input type="file" id="file" accept="image/*" hidden>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(() => {
+  // Endpoint: the web-chat Supabase Edge Function. Override with ?api=... for testing.
+  const API = new URLSearchParams(location.search).get("api")
+    || "https://pfniphvzvgmmghejwadl.supabase.co/functions/v1/web-chat";
+
+  const $ = (id) => document.getElementById(id);
+  const chat = $("chat"), chips = $("chips"), input = $("input"), sendBtn = $("send");
+  const sheet = $("sheet"), file = $("file"), statusEl = $("status"), toastEl = $("toast");
+
+  // Per-viewer convenience only: the conversation itself lives in the database.
+  const store = {
+    get(key) { try { return localStorage.getItem(key); } catch { return null; } },
+    set(key, value) { try { localStorage.setItem(key, value); } catch { /* private mode */ } },
+    del(key) { try { localStorage.removeItem(key); } catch { /* ignore */ } },
+  };
+  const uuid = () => (crypto.randomUUID ? crypto.randomUUID()
+    : "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) => (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)));
+
+  let clientId = store.get("pont.clientId") || uuid();
+  store.set("pont.clientId", clientId);
+  let transcript = [];
+  try { transcript = JSON.parse(store.get("pont.transcript") || "[]"); } catch { transcript = []; }
+  let busy = false;
+
+  const time = (t) => new Date(t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const ticksSvg = '<svg class="ticks" viewBox="0 0 16 11"><path d="M11.07.65 4.6 7.1 2.06 4.57.65 5.98l3.95 3.95 7.88-7.87zM15.35.65 8.88 7.1l-.9-.9-1.41 1.41 2.31 2.32 7.88-7.87z"/></svg>';
+
+  function save() {
+    // Photos are not kept in storage (size), only a placeholder.
+    store.set("pont.transcript", JSON.stringify(transcript.slice(-120).map((m) => ({ ...m, image: m.image ? "kept" : undefined }))));
+  }
+
+  function toast(text) {
+    toastEl.textContent = text;
+    toastEl.classList.add("show");
+    clearTimeout(toast.t);
+    toast.t = setTimeout(() => toastEl.classList.remove("show"), 2600);
+  }
+
+  function render(m) {
+    const row = document.createElement("div");
+    row.className = `msg ${m.from}`;
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    if (m.image && m.image !== "kept") {
+      const img = document.createElement("img");
+      img.src = m.image;
+      img.alt = "Photo of the school building";
+      bubble.appendChild(img);
+    }
+    if (m.text) bubble.appendChild(document.createTextNode(m.text));
+    const meta = document.createElement("span");
+    meta.className = "meta";
+    meta.textContent = time(m.time);
+    if (m.from === "out") {
+      meta.insertAdjacentHTML("beforeend", ticksSvg);
+      m.el = meta.querySelector(".ticks");
+    }
+    bubble.appendChild(meta);
+    row.appendChild(bubble);
+    chat.appendChild(row);
+    m.row = row;
+    chat.scrollTop = chat.scrollHeight;
+    return row;
+  }
+
+  function markRead() {
+    for (const m of transcript) if (m.el) m.el.classList.add("read");
+  }
+
+  // Turn "1. English" lines and "Reply 0 to skip" into tap targets.
+  function updateChips(botText) {
+    chips.textContent = "";
+    if (!botText) return;
+    const options = [];
+    for (const line of botText.split("\n")) {
+      const match = line.match(/^(\d{1,2})\.\s+(.+)$/);
+      if (match) options.push({ send: match[1], label: match[2] });
+    }
+    const lower = botText.toLowerCase();
+    if (/reply 0 to skip|répondez 0 pour passer/.test(lower)) {
+      if (/photo/.test(lower)) options.push({ action: "photo", label: lower.includes("répondez") ? "Envoyer une photo" : "Send photo" });
+      if (/location|position/.test(lower)) options.push({ action: "location", label: lower.includes("répondez") ? "Partager ma position" : "Share location" });
+      options.push({ send: "0", label: lower.includes("répondez") ? "Passer" : "Skip" });
+    }
+    for (const o of options) {
+      const b = document.createElement("button");
+      b.className = "chip";
+      b.type = "button";
+      b.textContent = o.label;
+      b.addEventListener("click", () => {
+        if (o.action === "photo") return file.click();
+        if (o.action === "location") return shareLocation();
+        send({ text: o.send, display: o.label });
+      });
+      chips.appendChild(b);
+    }
+    // The chip row shrinks the chat area, so keep the latest message in view.
+    requestAnimationFrame(() => { chat.scrollTop = chat.scrollHeight; });
+  }
+
+  function showTyping(on) {
+    statusEl.textContent = on ? "typing…" : "online";
+    const existing = chat.querySelector(".typing");
+    if (on && !existing) {
+      const row = document.createElement("div");
+      row.className = "msg in typing";
+      row.innerHTML = '<div class="bubble"><i></i><i></i><i></i></div>';
+      chat.appendChild(row);
+      chat.scrollTop = chat.scrollHeight;
+    } else if (!on && existing) existing.remove();
+  }
+
+  async function send({ text = "", display, image, location: loc, hidden = false }) {
+    if (busy) return;
+    busy = true;
+    sendBtn.disabled = true;
+    chips.textContent = "";
+    const messageId = uuid();
+    let entry = null;
+    if (!hidden) {
+      entry = { from: "out", text: display ?? text, image, time: Date.now() };
+      transcript.push(entry);
+      render(entry);
+      save();
+    }
+    showTyping(true);
+    try {
+      const payload = { clientId, messageId, text };
+      if (image) payload.image = { dataUrl: image };
+      if (loc) payload.location = loc;
+      const res = await fetch(API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      showTyping(false);
+      markRead();
+      for (const reply of data.replies || []) {
+        const m = { from: "in", text: reply, time: Date.now() };
+        transcript.push(m);
+        render(m);
+      }
+      save();
+      const last = (data.replies || []).at(-1);
+      updateChips(last);
+    } catch (err) {
+      showTyping(false);
+      if (entry?.row) {
+        const fail = document.createElement("div");
+        fail.className = "failed";
+        fail.textContent = "Not sent. Tap to retry.";
+        fail.addEventListener("click", () => {
+          entry.row.remove();
+          transcript.splice(transcript.indexOf(entry), 1);
+          busy = false;
+          send({ text, display, image, location: loc });
+        });
+        entry.row.appendChild(fail);
+      } else {
+        toast("Could not reach Pont. Check your connection.");
+      }
+      console.error(err);
+    } finally {
+      busy = false;
+      sendBtn.disabled = false;
+    }
+  }
+
+  // Downsize photos in the browser so uploads are fast on mobile data.
+  function readPhoto(f) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, 1280 / Math.max(img.width, img.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(img.src);
+        resolve(canvas.toDataURL("image/jpeg", 0.8));
+      };
+      img.onerror = reject;
+      img.src = URL.createObjectURL(f);
+    });
+  }
+
+  function shareLocation() {
+    sheet.classList.remove("open");
+    if (!navigator.geolocation) return toast("Location is not available. Reply 0 to skip.");
+    toast("Getting your location…");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => send({ display: "📍 Location shared", location: { lat: pos.coords.latitude, lng: pos.coords.longitude } }),
+      () => toast("Location not shared. You can tap Skip."),
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 },
+    );
+  }
+
+  function sendTyped() {
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = "";
+    input.style.height = "";
+    send({ text });
+  }
+
+  sendBtn.addEventListener("click", sendTyped);
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendTyped(); }
+  });
+  input.addEventListener("input", () => {
+    input.style.height = "";
+    input.style.height = `${Math.min(input.scrollHeight, 120)}px`;
+  });
+  $("attach").addEventListener("click", (e) => { e.stopPropagation(); sheet.classList.toggle("open"); });
+  document.addEventListener("click", (e) => { if (!sheet.contains(e.target)) sheet.classList.remove("open"); });
+  $("pickPhoto").addEventListener("click", () => { sheet.classList.remove("open"); file.click(); });
+  $("pickLocation").addEventListener("click", shareLocation);
+  file.addEventListener("change", async () => {
+    const f = file.files && file.files[0];
+    file.value = "";
+    if (!f) return;
+    try {
+      const dataUrl = await readPhoto(f);
+      send({ image: dataUrl });
+    } catch {
+      toast("Could not read that photo. Try another one.");
+    }
+  });
+  $("newChat").addEventListener("click", () => {
+    if (!confirm("Start a new chat? / Nouvelle conversation ?")) return;
+    clientId = uuid();
+    store.set("pont.clientId", clientId);
+    store.del("pont.transcript");
+    transcript = [];
+    chat.querySelectorAll(".msg").forEach((el) => el.remove());
+    chips.textContent = "";
+    send({ text: "Hi", hidden: true });
+  });
+
+  // Restore this browser's chat, or greet a new visitor straight away.
+  if (transcript.length) {
+    for (const m of transcript) render(m);
+    markRead();
+    updateChips([...transcript].reverse().find((m) => m.from === "in")?.text);
+  } else {
+    send({ text: "Hi", hidden: true });
+  }
+})();
+</script>
+</body>
+</html>

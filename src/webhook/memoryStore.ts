@@ -2,7 +2,7 @@
 import type { ReporterSnapshot, ReporterUpdate, Session, Submission } from "../engine/types.ts";
 import type { MessageLogRow, NewReporter, Store } from "./store.ts";
 
-type StoredReporter = ReporterSnapshot & { phoneHash: string; phoneE164: string; phoneLast4: string };
+type StoredReporter = ReporterSnapshot & { phoneHash: string; phoneE164: string | null; phoneLast4: string | null };
 
 export class MemoryStore implements Store {
   processed = new Set<string>();

@@ -418,3 +418,7 @@ enabled = true
 # Requests are authenticated by the Twilio signature check instead.
 [functions.twilio-webhook]
 verify_jwt = false
+
+# Public WhatsApp-style web chat for judges. No Supabase JWT: anyone with the page can chat.
+[functions.web-chat]
+verify_jwt = false
