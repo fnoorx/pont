@@ -104,8 +104,10 @@ location.
 that changes it, see `.github/workflows/pages.yml`).
 
 **Presentation view:** https://fnoorx.github.io/ps43-bridge/present.html shows the same live chat
-inside an iPhone frame, with a QR code so judges can try it. Click the phone to drive the chat;
-"Restart chat" starts fresh, "Dark mode" switches themes, and **P** hides the side panel.
+inside a black iPhone frame, with a QR code so judges can try it. On a laptop, the main link opens
+this view automatically (phones get the plain chat; add `?plain` to force the plain chat). Click
+the phone to drive the chat; "Restart chat" starts fresh and **P** hides the side panel. The chat
+is always light mode (add `?theme=dark` to the chat link for dark).
 Set `WEB_CHAT_URL` in `.env` to its public address, then `npm run demo:card` makes a QR for it.
 To try it locally: `cd web && python3 -m http.server 8765` and open http://localhost:8765.
 

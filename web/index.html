@@ -4,11 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="theme-color" content="#008069">
+<meta name="color-scheme" content="light">
 <script>
-  // ?theme=light|dark forces a theme (used by the presentation page).
   (() => {
-    const theme = new URLSearchParams(location.search).get("theme");
-    if (theme === "light" || theme === "dark") document.documentElement.dataset.theme = theme;
+    const params = new URLSearchParams(location.search);
+    // Laptops and projectors get the iPhone presentation view; phones get the chat itself.
+    // Add ?plain to skip this.
+    if (window.self === window.top && !params.has("plain") && matchMedia("(min-width: 900px) and (hover: hover)").matches) {
+      location.replace("present.html");
+      return;
+    }
+    const theme = params.get("theme");
+    if (theme === "dark") document.documentElement.dataset.theme = "dark";
   })();
 </script>
 <title>Pont Chat</title>
@@ -34,27 +41,7 @@
     --banner-ink: #54656f;
     --error: #d93025;
   }
-  /* Dark theme: follows the device, unless ?theme=light or ?theme=dark is set. */
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --header: #202c33;
-      --header-ink: #e9edef;
-      --chat-bg: #0b141a;
-      --dots: rgba(255, 255, 255, 0.025);
-      --in: #202c33;
-      --out: #005c4b;
-      --ink: #e9edef;
-      --muted: #8696a0;
-      --chip: #202c33;
-      --chip-ink: #00a884;
-      --chip-border: #2a3942;
-      --bar: #202c33;
-      --input: #2a3942;
-      --send: #00a884;
-      --banner: #182229;
-      --banner-ink: #8696a0;
-    }
-  }
+  /* Light by default. Dark only with ?theme=dark. */
   :root[data-theme="dark"] {
     --header: #202c33;
     --header-ink: #e9edef;
