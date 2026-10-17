@@ -38,11 +38,11 @@ function Dashboard() {
 
   useEffect(() => {
     db().auth.getUser().then(({ data }) => {
-      if (!data.user) nav({ to: "/", replace: true });
+      if (!data.user) nav({ to: "/auth", replace: true });
       else { setEmail(data.user.email ?? ""); setReady(true); }
     });
     const { data: sub } = db().auth.onAuthStateChange((ev) => {
-      if (ev === "SIGNED_OUT") nav({ to: "/", replace: true });
+      if (ev === "SIGNED_OUT") nav({ to: "/auth", replace: true });
     });
     return () => sub.subscription.unsubscribe();
   }, [nav]);
@@ -70,7 +70,7 @@ function Dashboard() {
     await qc.cancelQueries();
     qc.clear();
     await db().auth.signOut();
-    nav({ to: "/", replace: true });
+    nav({ to: "/auth", replace: true });
   }
 
   if (!ready) return <div className="p-10 text-sm text-muted-foreground">Checking your sign-in…</div>;

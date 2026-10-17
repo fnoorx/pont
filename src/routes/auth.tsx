@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { db } from "@/lib/ps43";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
       { title: "PS43 Foundation — Staff sign in" },
@@ -25,7 +25,7 @@ function Login() {
 
   useEffect(() => {
     db().auth.getSession().then(({ data }) => {
-      if (data.session) nav({ to: "/dashboard", replace: true });
+      if (data.session) nav({ to: "/live-schools", replace: true });
     });
   }, [nav]);
 
@@ -36,7 +36,7 @@ function Login() {
     const { error } = await db().auth.signInWithPassword({ email, password });
     setBusy(false);
     if (error) return setErr(error.message);
-    nav({ to: "/dashboard", replace: true });
+    nav({ to: "/live-schools", replace: true });
   }
 
   return (
