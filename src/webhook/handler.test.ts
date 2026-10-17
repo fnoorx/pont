@@ -1,10 +1,10 @@
 import { createHmac } from "node:crypto";
 import { beforeEach, describe, expect, it } from "vitest";
 import { placeholderEngine } from "../engine/placeholder.ts";
-import type { Engine, ReporterSnapshot, ReporterUpdate, Session } from "../engine/types.ts";
+import type { Engine } from "../engine/types.ts";
 import { twilioProvider } from "../messaging/twilio.ts";
 import { createWebhookHandler, type WebhookConfig } from "./handler.ts";
-import type { MessageLogRow, NewReporter, Store } from "./store.ts";
+import { MemoryStore } from "./memoryStore.ts";
 
 const config: WebhookConfig = {
   twilioAccountSid: "AC" + "0".repeat(32),
@@ -12,44 +12,6 @@ const config: WebhookConfig = {
   publicUrl: "https://example.supabase.co/functions/v1/twilio-webhook",
   phoneHashSalt: "salt",
 };
-
-class FakeStore implements Store {
-  processed = new Set<string>();
-  reporters = new Map<string, ReporterSnapshot & { phoneHash: string; phoneE164: string; phoneLast4: string }>();
-  sessions = new Map<string, Session & { reporterId: string }>();
-  messages: MessageLogRow[] = [];
-  uploads: { path: string; size: number; contentType: string }[] = [];
-
-  async markProcessed(sid: string) {
-    if (this.processed.has(sid)) return false;
-    this.processed.add(sid);
-    return true;
-  }
-  async findOrCreateReporter(r: NewReporter) {
-    const existing = [...this.reporters.values()].find((x) => x.phoneHash === r.phoneHash);
-    if (existing) return existing;
-    const created = { id: `r${this.reporters.size + 1}`, language: null, role: null, consentAt: null, ...r };
-    this.reporters.set(created.id, created);
-    return created;
-  }
-  async loadActiveSession(reporterId: string) {
-    return [...this.sessions.values()].find((s) => s.reporterId === reporterId && s.status === "active") ?? null;
-  }
-  async saveSession(reporterId: string, s: Session) {
-    const id = s.id ?? `s${this.sessions.size + 1}`;
-    this.sessions.set(id, { ...s, id, reporterId });
-  }
-  async updateReporter(id: string, u: ReporterUpdate) {
-    const r = this.reporters.get(id)!;
-    this.reporters.set(id, { ...r, ...(u.language ? { language: u.language } : {}) });
-  }
-  async logMessages(rows: MessageLogRow[]) {
-    this.messages.push(...rows);
-  }
-  async uploadMedia(path: string, bytes: Uint8Array, contentType: string) {
-    this.uploads.push({ path, size: bytes.byteLength, contentType });
-  }
-}
 
 function sign(params: Record<string, string>, url = config.publicUrl, token = config.twilioAuthToken): string {
   const data = url + Object.keys(params).sort().map((k) => k + params[k]).join("");
@@ -67,7 +29,7 @@ const SID2 = "SM" + "2".repeat(32);
 const text = (sid: string, body = "Bonjour", from = "whatsapp:+237690000001") => ({ MessageSid: sid, From: from, Body: body, NumMedia: "0" });
 
 describe("webhook handler", () => {
-  let store: FakeStore;
+  let store: MemoryStore;
   let fetched: { url: string; auth: string | null }[];
   const fakeFetch: typeof fetch = async (input, init) => {
     fetched.push({ url: String(input), auth: new Headers(init?.headers).get("Authorization") });
@@ -77,7 +39,7 @@ describe("webhook handler", () => {
     createWebhookHandler({ config, store, engine, provider: twilioProvider, fetchImpl: fakeFetch, log: () => {} });
 
   beforeEach(() => {
-    store = new FakeStore();
+    store = new MemoryStore();
     fetched = [];
   });
 

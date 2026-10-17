@@ -97,5 +97,15 @@ export function createSupabaseStore(db: SupabaseClient): Store {
       const { error } = await db.storage.from(BUCKET).upload(path, bytes, { contentType, upsert: true });
       if (error) throw new Error(`upload media: ${error.message}`);
     },
+
+    async submitAssessment(reporterId, submission) {
+      const { data, error } = await db.rpc("submit_assessment", {
+        p_reporter_id: reporterId,
+        p_submission: submission,
+      });
+      if (error) throw new Error(`submit assessment: ${error.message}`);
+      if (typeof data !== "string") throw new Error("submit assessment: no ref_code returned");
+      return data;
+    },
   };
 }

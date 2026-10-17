@@ -1,3 +1,3 @@
-// Conversation engine entry point. The real school assessment engine replaces the placeholder here.
-export { placeholderEngine as engine } from "./placeholder.ts";
-export type * from "./types.ts";
+// Conversation engine entry point. The webhook and simulator import `engine` from here.
+export { assessmentEngine as engine } from "./engine.ts";
+export * from "./types.ts";

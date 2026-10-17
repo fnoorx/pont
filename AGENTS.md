@@ -2,6 +2,42 @@
 
 Guidance for AI coding agents and humans working in this repo. Read this fully before writing code.
 
+## 0. Prototype mode (read first)
+
+This is a **hackathon prototype**, not production software. The goal is a working demo that shows judges how the idea solves PS43's problem, using mock data.
+
+### Priorities, in order
+1. **It works live in the demo.** A judge texts the bot, and their school shows up on the dashboard.
+2. **It tells the story clearly.** The judging-relevant ideas must be visible:
+   - WhatsApp-first
+   - bilingual
+   - works on basic phones
+   - privacy-aware for conflict regions
+3. **It's simple enough to build in a weekend.**
+
+### Do
+- Choose the simplest thing that works.
+- Hardcode where it saves time (config values, demo data, copy).
+- Use mock and seed data freely. Fake data that looks realistic is better than real integrations.
+- Keep the design ideas from sections 4 and 5. They are pitch points, not just engineering rules.
+- Write a few tests for the conversation engine's main paths so the demo doesn't break. That's enough.
+
+### Don't
+- Don't spend time on production hardening:
+  - deduplication
+  - idempotency
+  - retries
+  - rate limiting
+  - message audit logs
+  - data retention jobs
+  - CI pipelines
+  - exhaustive test coverage
+  - edge-case error handling beyond "don't crash the demo"
+- Don't build features judges won't see.
+- Don't over-engineer abstractions. One working path beats a flexible framework.
+
+If something production-grade would matter in real life, mention it in the README's "What a real pilot would add" section instead of building it. That list helps the pitch.
+
 ## 1. Project overview
 
 **Product:** Pont (French for "bridge").
@@ -14,12 +50,12 @@ Guidance for AI coding agents and humans working in this repo. Read this fully b
 
 | Component | What it does | Status |
 |---|---|---|
-| **A. Field intake + dashboard** | WhatsApp bot (SMS fallback) collects school needs; PS43 dashboard shows map, ranked needs, pipeline | **Building now** |
-| B. Readiness score + recommender | Scores schools, recommends Tier 0/1/2 intervention | Later |
-| C. Trusted partner network | Referral-based partner profiles, trust earned via delivery | Later |
-| D. Milestones + impact | Photo-verified milestones, weekly attendance by SMS | Later |
+| **A. Field intake + dashboard** | WhatsApp bot (SMS fallback) collects school needs; PS43 dashboard shows map, ranked needs | **Building now** |
+| B. Readiness score + recommender | Scores schools, recommends Tier 0/1/2 intervention | Later, maybe |
+| C. Trusted partner network | Referral-based partner profiles, trust earned via delivery | Pitch / roadmap |
+| D. Milestones + impact | Photo-verified milestones, weekly attendance by SMS | Pitch / roadmap |
 
-Only build A for now. Design the data model so B, C and D can plug in later without migrations that break existing data (see section 6).
+Build A. B, C and D can be shown with mock screens or slides if time allows.
 
 ## 2. Repos and ownership
 
@@ -27,21 +63,17 @@ There are two codebases. Supabase is the contract between them.
 
 | Repo | Built with | Owns |
 |---|---|---|
-| `ps43-pont` (this repo) | TypeScript, Supabase CLI | Database schema, migrations, views, RLS, RPC functions, storage config, seed data, conversation engine, Twilio webhook, CLI simulator |
+| `ps43-pont` (this repo) | TypeScript, Supabase CLI | Database schema, views, seed data, conversation engine, Twilio webhook, CLI simulator |
 | `ps43-pont-dashboard` | Lovable (React + Supabase) | Staff dashboard UI only |
 
 Rules:
-- **Schema:** This repo is the single source of truth for the database. The dashboard never creates or alters tables, views or policies.
-- **Read access:** The dashboard reads only from the `dashboard_*` views (section 7).
-- **Write access:** The dashboard's only write is the `set_assessment_verified` RPC.
-- **Breaking changes:** Changing any view column, enum value, or RPC signature breaks the dashboard. When unavoidable:
-  - Update section 7.
-  - Update `docs/DASHBOARD_CONTRACT.md` in the same change.
-  - Tell the team.
+- **Schema:** This repo owns the database schema. The dashboard does not create or alter tables or views.
+- **Access:** The dashboard reads from the `dashboard_*` views (section 7) and may call `set_assessment_verified`.
+- **Changing the contract:** If you change a view column or value set, update section 7 and `docs/DASHBOARD_CONTRACT.md`, and tell your teammate.
 
 ## 3. Why WhatsApp
 
-PS43's executive director stated that WhatsApp is how they communicate and coordinate today. Field users should never need to download an app, create an account, or open a web page. Messages queue on the phone and send when signal returns, which gives us offline-tolerant behaviour for free.
+PS43's executive director stated that WhatsApp is how they communicate and coordinate today. Field users shouldn't need to download an app, create an account, or open a web page. WhatsApp messages queue on the phone and send when signal returns, which gives offline-tolerant behaviour for free. This is the core of the pitch.
 
 ## 4. Users and channels
 
@@ -50,86 +82,67 @@ PS43's executive director stated that WhatsApp is how they communicate and coord
 | Local partner / coordinator | WhatsApp | Smartphone, patchy data. Primary reporter. |
 | Headteacher / teacher | WhatsApp or SMS | May only have a basic phone. |
 | Community member | WhatsApp or SMS | Optional reporter; submissions unverified by default. |
-| PS43 staff (Toronto) | Web dashboard (Lovable) | Small, non-technical team. Laptop, good internet. |
+| PS43 staff (Toronto) | Web dashboard (Lovable) | Small, non-technical team. |
 
-## 5. Hard constraints (do not violate)
+## 5. Design principles (keep these, they're what judges evaluate)
 
 ### Low bandwidth, low literacy friendly
-- Every bot message is short: aim for under 300 characters, never over 600.
-- Questions are multiple choice with numbered options. Users reply with a number.
-- Also accept obvious free-text equivalents (e.g. "yes", "oui", "1", "un").
-- Optional steps (photo, location, voice note) can always be skipped with a single reply.
-- Don't send images, links, or formatting the user must render to understand a message.
-- Don't use emojis to carry meaning.
-- The SMS path must work with plain text only (no media, no buttons). Keep SMS messages within 2 segments where possible.
+- Bot messages are short (aim under 300 characters).
+- Questions are numbered multiple choice. Users reply with a number. Accept simple words like "yes" or "oui" where easy.
+- Optional steps (photo, location, notes) can be skipped.
+- The SMS path is plain text only and skips photo and location steps.
 
-### Bilingual from day one
-- Every user-facing bot string exists in English and French. No hardcoded strings in logic.
-- Language is chosen at the first message and stored on the reporter.
-- French is the default fallback, since most of Cameroon is francophone.
+### Bilingual
+- Every bot message exists in English and French.
+- Language is chosen at the first message. French is the default fallback.
 
-### Resumable conversations
-- Session state is persisted in the database, never in memory.
-- If a user returns after a gap, offer to continue or start over.
-- Sessions expire after 72 hours of inactivity.
-- Global commands work at any step:
-  - `MENU`
-  - `RESTART` / `RECOMMENCER`
-  - `HELP` / `AIDE`
-  - `BACK` / `RETOUR`
-- Invalid input re-asks the same question with a short hint. Never crash, never dead-end.
+### Simple conversation controls
+- `RESTART` / `RECOMMENCER` starts over at any point.
+- Invalid input re-asks the question with a short hint.
+- Session state is stored in the database so the serverless webhook can pick up where it left off.
 
-### Privacy and safety
-Parts of Cameroon are conflict-affected (Northwest, Southwest, Far North), and schools there have been attacked. Location data is sensitive.
+Nice to have only if quick:
+- `HELP` / `AIDE`
+- `BACK` / `RETOUR`
+- Resume-after-gap
 
-- **Consent:** Show a consent message before collecting anything. If declined, collect nothing and end politely.
-- **No student data:**
-  - Never collect student names, ages, photos of children's faces, or other student-level data.
-  - Collect only aggregate counts.
-  - Photo prompts ask for the building, not people.
-- **Location precision:**
-  - Exact coordinates are stored only in restricted columns on raw tables.
-  - Dashboard views expose coordinates rounded to 1 decimal place (about 11 km).
-  - For sensitive schools, coordinates are null in views. Only region-level aggregates are shown.
-- **Sensitive regions:** Keep the list in the `regions` table (`is_sensitive`). Default sensitive: `NW`, `SW`, `EN`.
-- **Phone numbers:**
-  - Store them as a salted SHA-256 hash plus the last 4 digits.
-  - Raw numbers are kept only in `reporters.phone_e164`, which no view exposes, so the bot can reply.
-- **Database access:**
-  - `anon` has no access to anything.
-  - `authenticated` (dashboard staff) can read only the `dashboard_*` views and call `set_assessment_verified`.
-  - The service role is used only by the webhook and seed scripts, never in the dashboard.
-- **Secrets:** Keep them in environment variables only. Never commit `.env`. Never give the service role key to Lovable or anyone working on the dashboard.
+### Privacy and safety (visible in the demo)
+Parts of Cameroon are conflict-affected (Northwest, Southwest, Far North), and schools there have been attacked. Showing that we thought about this is a strong pitch point.
 
-### Sustainability and cost
-PS43 has no engineering staff. Everything must run on managed services with free or near-free tiers:
-- No custom servers.
-- No Kubernetes.
-- No blockchain.
-- No ML models.
+- **Consent:** A one-message consent step before collecting data.
+- **No student data:** No student names or photos of children. Photo prompts ask for the building.
+- **Location:**
+  - The dashboard shows rounded coordinates (1 decimal, about 11 km).
+  - Schools in sensitive regions show no pin, only region-level counts.
+- **Phone numbers:** The dashboard shows reporter role + last 4 digits only.
+- **Access:**
+  - The dashboard requires a login.
+  - The service role key stays out of the dashboard and out of git.
 
-Readiness logic (later, B) is transparent rules, not AI.
+The real implementation of these can be simple (e.g. a plain SHA-256 phone hash). The point is that the behaviour is visible.
+
+### Low cost
+Use managed free tiers (Supabase, Twilio sandbox, Lovable). No custom servers. No blockchain. No ML. Readiness logic (if built) is simple rules.
 
 ## 6. Tech stack (this repo)
 
-- **Language:** TypeScript (strict).
-- **Database, auth, storage, hosting for webhook:** Supabase.
-  - Migrations live in `supabase/migrations`, managed with the Supabase CLI.
-  - The Twilio webhook runs as a Supabase Edge Function (Deno).
-- **Conversation engine:** plain TypeScript in `src/engine`.
-  - It must use no Node-only or Deno-only APIs, so the same code runs in Vitest (Node), the CLI simulator (Node via `tsx`), and the Edge Function (Deno).
-- **Messaging:** Twilio.
-  - Use the WhatsApp Sandbox for development and demo; SMS uses the same webhook.
-  - Keep the messaging layer behind an interface so Meta Cloud API can replace Twilio later.
-- **Validation:** zod.
-- **Tests:** Vitest.
-- **Scripts:** `tsx` for seed and simulator.
+- **Language:** TypeScript.
+- **Backend:** Supabase.
+  - Postgres for data, Auth for dashboard login, Storage for photos.
+  - The Twilio webhook runs as a Supabase Edge Function.
+- **Conversation engine:** plain TypeScript in `src/engine`, with no Node-only or Deno-only APIs, so the same code runs in tests, the CLI simulator, and the Edge Function.
+- **Messaging:** Twilio WhatsApp Sandbox; SMS uses the same webhook.
+- **Tooling:** Vitest for the handful of engine tests, `tsx` for scripts.
 
-Twilio media URLs require auth. Download media server-side and upload to the `field-media` bucket. Never store or render Twilio URLs.
+Photos (if time allows): download the media from Twilio in the webhook and upload it to the `field-media` bucket. If this is fiddly, skip live photo upload and use seeded photos for the demo.
+
+Twilio signature verification is optional. Add it only if it's quick.
 
 ## 7. Database contract
 
-### Value sets (text columns with CHECK constraints, not Postgres enums)
+The dashboard is built against this section. Keep names stable.
+
+### Value sets (text columns, CHECK constraints are fine but optional)
 
 | Field | Values |
 |---|---|
@@ -142,10 +155,9 @@ Twilio media URLs require auth. Download media server-side and upload to the `fi
 | `role` | `headteacher`, `teacher`, `partner`, `community` |
 | `language` | `en`, `fr` |
 | `channel` | `whatsapp`, `sms` |
-| `session status` | `active`, `completed`, `abandoned` |
 | `media type` | `photo`, `audio` |
 
-### Raw tables (no direct access for `anon` or `authenticated`)
+### Tables
 
 - **`regions`**
   - `code` (PK)
@@ -167,7 +179,6 @@ Twilio media URLs require auth. Download media server-side and upload to the `fi
 - **`sessions`**
   - `id`
   - `reporter_id`
-  - `flow`
   - `step`
   - `answers` (jsonb)
   - `status`
@@ -175,14 +186,14 @@ Twilio media URLs require auth. Download media server-side and upload to the `fi
 - **`schools`**
   - `id`
   - `name`
-  - `region_code` (FK)
+  - `region_code`
   - `town`
   - `lat_exact`
   - `lng_exact`
   - `created_at`
 - **`assessments`**
   - `id`
-  - `ref_code` (unique, e.g. `PS-4F2K`)
+  - `ref_code`
   - `school_id`
   - `reporter_id`
   - `enrollment_band`
@@ -200,23 +211,10 @@ Twilio media URLs require auth. Download media server-side and upload to the `fi
   - `type`
   - `storage_path`
   - `created_at`
-- **`processed_messages`**
-  - `message_sid` (PK)
-  - `processed_at`
-  - Used for Twilio idempotency.
-- **`messages`** (audit log)
-  - `id`
-  - `reporter_id`
-  - `direction`
-  - `body`
-  - `created_at`
 
-A school can have many assessments. Never overwrite; always append.
+If `processed_messages` or `messages` tables already exist from earlier work, leave them. They are not required.
 
-Reserved for later, do not build yet:
-- `readiness_scores` (B)
-- `partners`, `referrals` (C)
-- `projects`, `milestones`, `attendance_reports` (D)
+A new bot submission can simply create a new school row. Don't worry about matching or deduplicating schools for the prototype.
 
 ### Region seed data
 Regional capitals are used as centroids.
@@ -234,9 +232,9 @@ Regional capitals are used as centroids.
 | SW | Southwest | Sud-Ouest | 4.16 | 9.24 | yes |
 | OU | West | Ouest | 5.48 | 10.42 | no |
 
-### Dashboard views (the contract, `authenticated` gets SELECT only)
+### Dashboard views (SELECT for `authenticated`)
 
-These views run with owner privileges (not `security_invoker`) so they can read the locked raw tables. This is intentional. The Supabase linter warning about security-definer views is expected. Grant SELECT to `authenticated` only, never `anon`.
+Views run with owner privileges so they can read the raw tables. The Supabase linter warning about this is expected. Raw tables are not readable by `anon` or `authenticated`.
 
 **`dashboard_schools`** (one row per school, latest assessment flattened)
 - `id`
@@ -287,7 +285,7 @@ These views run with owner privileges (not `security_invoker`) so they can read 
 - `school_count`
 - `unsafe_count`
 - `no_power_count`
-- `top_need` (most common latest top_need, NULL if none)
+- `top_need`
 - `last_submitted_at`
 
 **`dashboard_media`**
@@ -300,21 +298,19 @@ These views run with owner privileges (not `security_invoker`) so they can read 
 
 ### RPC
 - `set_assessment_verified(assessment_id uuid, verified boolean) returns void`
-  - Runs as `SECURITY DEFINER` with `search_path` pinned.
-  - Executable by `authenticated` only.
+- Callable by `authenticated`.
 
 ### Storage
 - Private bucket `field-media`.
-- `authenticated` may read objects in it (for signed URLs).
-- Only the service role writes.
+- `authenticated` can read (for signed URLs).
 
 ## 8. The school assessment flow
 
 1. **Language:** 1 English / 2 Français
-2. **Consent:** explain purpose, what is stored, that no student data is collected. 1 Agree / 2 No
+2. **Consent:** 1 Agree / 2 No
 3. **Role:** headteacher, teacher, local partner, community member
 4. **School name:** free text
-5. **Region:** numbered list of the 10 regions above
+5. **Region:** numbered list of the 10 regions
 6. **Town or village:** free text
 7. **Enrollment:** under 100 / 100-300 / 300-600 / over 600
 8. **Building condition:** good / needs repairs / unsafe or no roof
@@ -330,63 +326,55 @@ These views run with owner privileges (not `security_invoker`) so they can read 
     - internet
     - teacher training
     - other
-13. **Photo of the building:** optional; WhatsApp only, skipped automatically on SMS
-14. **Location pin:** optional; WhatsApp only
-15. **Anything else:** optional free text or voice note
+13. **Photo of the building:** optional, WhatsApp only
+14. **Location pin:** optional, WhatsApp only. If skipped, use the region centroid plus a small random offset so the school still appears on the map.
+15. **Anything else:** optional free text
 16. **Summary + confirm:** 1 Submit / 2 Start over
 
-After submit, send a short thank-you with the `ref_code`.
+After submit, reply with a short thank-you and the `ref_code`.
 
-## 9. Architecture rules
+**Demo target:** completable in under 3 minutes.
 
-- **The conversation engine is a pure function:**
-  - Signature: `(session, inboundMessage) => { nextSession, outboundMessages }`
-  - No I/O inside it.
-- **The flow is defined as data:** steps, prompts by language, validators, next-step logic. Adding a question means editing one config entry.
-- **The webhook handler is thin:**
-  - Verify the Twilio signature (HMAC-SHA1 via Web Crypto).
-  - Check `processed_messages` for idempotency.
-  - Load the session.
-  - Call the engine.
-  - Persist.
-  - Reply.
-- **Webhook speed:** Respond quickly so Twilio does not retry.
-- **Privacy utilities:** Phone hashing and coordinate rounding each live in one shared module.
+## 9. Architecture (keep it light)
+
+- **The engine is a function:** `(session, inboundMessage) => { nextSession, replies }`. Keeping it free of I/O makes it easy to test and to run in the CLI simulator.
+- **The flow is a config array of steps** (prompt per language, options, next step). Don't build a generic workflow framework.
+- **The webhook does the basics:** load the session, run the engine, save, reply via TwiML.
 
 ## 10. Seed and demo data
 
 - About 20 fictional schools across at least 6 regions, including some in NW, SW and EN so the privacy behaviour is visible.
-- English and French names and notes matching the region (anglophone in NW/SW). Names must be clearly fictional.
+- English and French names and notes matching the region. Names must be clearly fictional.
 - Realistic spread:
   - Unsafe buildings with no power.
   - Solar schools wanting computers.
   - Good infrastructure wanting teacher training.
-- Some schools have 2 to 3 assessments over time.
+- Some schools with 2 to 3 assessments.
 - Mix of verified and unverified.
-- Seed one demo staff user via the Supabase Admin API using `DEMO_STAFF_EMAIL` and `DEMO_STAFF_PASSWORD` from env.
-- `npm run seed` wipes app data (not regions) and reseeds. It must be safe to run repeatedly.
-
-**Demo goal:** A judge scans a QR code, joins the Twilio sandbox, completes the flow on their own phone in under 3 minutes, and sees their school appear on the dashboard live.
+- A few seeded placeholder building photos are welcome.
+- The seed also creates a demo staff user from `DEMO_STAFF_EMAIL` and `DEMO_STAFF_PASSWORD`, with email confirmed.
+- `npm run seed` clears app data (not regions) and reseeds.
 
 ## 11. Commands
 
 The project should expose these npm scripts:
 
-- `npm run test`: Vitest
-- `npm run lint`: ESLint
-- `npm run typecheck`: `tsc --noEmit`
-- `npm run seed`: reset and seed demo data in the linked Supabase project
-- `npm run simulate`: terminal chat that drives the engine, no Twilio needed
+- `npm run test`: engine tests
+- `npm run seed`: reset and seed demo data
+- `npm run simulate`: terminal chat with the engine, no Twilio needed
 - `npm run db:push`: apply migrations to the linked project
-- `npm run functions:deploy`: deploy the webhook Edge Function
+- `npm run functions:deploy`: deploy the webhook
 
-## 12. Definition of done (per change)
+Lint and typecheck scripts are nice to have, not blockers.
 
-- Typecheck, lint and tests pass.
-- New bot strings have English and French versions.
-- Anything touching location or phone goes through the privacy utilities.
-- Any change to section 7 is mirrored in `docs/DASHBOARD_CONTRACT.md`.
-- No secrets committed. `.env.example` is updated when variables are added.
+## 12. Done means
+
+- **The demo path works end to end:**
+  - Seeded dashboard data shows up.
+  - A WhatsApp submission appears on the dashboard.
+- **Bot copy:** Both languages work.
+- **Privacy:** Sensitive regions show no school pins.
+- **Secrets:** None committed.
 
 ## 13. Writing style
 
@@ -394,14 +382,12 @@ The project should expose these npm scripts:
 - No em dashes in any written output (copy, docs, comments). Use commas, colons, or parentheses.
 - Bot copy should sound like a helpful coordinator, not a form.
 
-## 14. Out of scope for now
+## 14. Out of scope
 
-- Readiness scoring (B).
-- Partners (C).
-- Projects, milestones, attendance (D).
-- IVR or missed-call voice flows.
-- Production WhatsApp Business API onboarding.
+- Production hardening (see section 0).
+- Real WhatsApp Business API onboarding.
 - Payments or mobile money.
-- Any dashboard UI code in this repo.
+- IVR or voice flows.
+- Dashboard UI code in this repo.
 
-If a task seems to need any of these, stop and flag it.
+Partners (C) and milestones (D) can appear as mock screens or slides only.

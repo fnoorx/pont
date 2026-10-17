@@ -56,10 +56,36 @@ export interface ReporterUpdate {
   consentAt?: string;
 }
 
+/** A completed school report, written by the webhook in one database call. */
+export interface Submission {
+  school: {
+    name: string;
+    regionCode: string;
+    town: string;
+    /** Exact pin if shared. Stored only in restricted columns. */
+    lat: number | null;
+    lng: number | null;
+  };
+  assessment: {
+    enrollmentBand: string;
+    buildingCondition: string;
+    powerSource: string;
+    connectivity: string;
+    devices: string;
+    topNeed: string;
+    notes: string | null;
+  };
+  media: StoredMedia[];
+}
+
+/** Outbound text may contain this token; the webhook replaces it with the saved ref_code. */
+export const REF_CODE_TOKEN = "{{ref_code}}";
+
 export interface EngineResult {
   nextSession: Session;
   outboundMessages: OutboundMessage[];
   reporterUpdate?: ReporterUpdate;
+  submission?: Submission;
 }
 
 export type Engine = (session: Session | null, inbound: InboundMessage) => EngineResult;
