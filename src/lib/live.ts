@@ -363,6 +363,9 @@ export function fmtDate(iso: string | null | undefined): string {
 
 export const REFRESH_MS = 10_000;
 
+/** The public WhatsApp-style chat where schools report. Laptops get the phone view with a QR code. */
+export const CHAT_URL = "https://fnoorx.github.io/ps43-bridge/";
+
 export async function fetchView<T>(view: string): Promise<T[]> {
   const { data, error } = await db().from(view).select("*");
   if (error) throw new Error(`${view}: ${error.message}`);
