@@ -348,3 +348,65 @@ describe("assessment engine: copy limits", () => {
     expect(summary.length).toBeLessThanOrEqual(600);
   });
 });
+
+describe("weekly attendance", () => {
+  const returning = (extra: Partial<ReporterSnapshot> = {}) =>
+    new Chat("whatsapp", { language: "en", consentAt: "2026-10-01T00:00:00.000Z", lastSchoolName: "Bright Hope School", ...extra });
+
+  it("offers the home menu to a returning reporter with a school, then records two counts", () => {
+    const chat = returning();
+    expect(chat.send("hi")).toContain("2. Weekly attendance for Bright Hope School");
+    expect(chat.send("2")).toContain("how many students came");
+    expect(chat.send("212")).toContain("enrolled");
+    const done = chat.send("250");
+    expect(done).toContain("212 of 250 students came to Bright Hope School this week (85%)");
+    expect(chat.last?.attendance).toEqual({ present: 212, enrolled: 250 });
+    expect(chat.session?.status).toBe("completed");
+  });
+
+  it("re-asks when enrolled is lower than present, in French", () => {
+    const chat = returning({ language: "fr" });
+    chat.send("bonjour");
+    chat.send("2");
+    chat.send("300");
+    expect(chat.send("250")).toContain("au moins égal aux présents (300)");
+    expect(chat.last?.attendance).toBeUndefined();
+  });
+
+  it("still lets a returning reporter start a new school report", () => {
+    const chat = returning();
+    chat.send("hi");
+    expect(chat.send("1")).toContain("What is your role?");
+  });
+
+  it("accepts the ATT shortcut in one message", () => {
+    const chat = returning();
+    expect(chat.send("ATT 180 240")).toContain("(75%)");
+    expect(chat.last?.attendance).toEqual({ present: 180, enrolled: 240 });
+  });
+
+  it("keeps a report in progress when the shortcut is sent mid-report", () => {
+    const chat = returning();
+    chat.send("hi");
+    chat.send("1");
+    chat.send("1");
+    chat.send("New School");
+    const reply = chat.send("att 100 120");
+    expect(reply).toContain("Which region");
+    expect(chat.last?.attendance).toEqual({ present: 100, enrolled: 120 });
+    expect(chat.step).toBe("region");
+  });
+
+  it("explains the shortcut when the numbers are wrong", () => {
+    const chat = returning();
+    expect(chat.send("ATT 300 250")).toContain("For example: ATT 212 250");
+    expect(chat.last?.attendance).toBeUndefined();
+  });
+
+  it("asks for a school report first when the reporter has none", () => {
+    const chat = returning({ lastSchoolName: null });
+    expect(chat.send("ATT 100 120")).toContain("Let's report it first");
+    expect(chat.last?.attendance).toBeUndefined();
+    expect(chat.step).toBe("role");
+  });
+});

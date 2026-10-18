@@ -129,6 +129,7 @@ export function createInboundProcessor(deps: ProcessorDeps): (parsed: ParsedInbo
       // Submit before saving the session: if the write fails, the reporter can simply reply again.
       let refCode: string | null = null;
       if (result.submission) refCode = await store.submitAssessment(reporter.id, result.submission);
+      if (result.attendance) await store.submitAttendance(reporter.id, result.attendance);
       await store.saveSession(reporter.id, result.nextSession);
       if (result.reporterUpdate && Object.keys(result.reporterUpdate).length > 0) {
         await store.updateReporter(reporter.id, result.reporterUpdate);

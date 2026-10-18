@@ -53,7 +53,7 @@ If something production-grade would matter in real life, mention it in the READM
 | **A. Field intake + dashboard** | WhatsApp bot (SMS fallback) collects school needs; PS43 dashboard shows map, ranked needs | **Built** |
 | B. Readiness score + recommender | Scores schools, recommends Tier 0/1/2 intervention | **Prototype:** live rules-based view (`dashboard_readiness`) |
 | C. Trusted partner network | Referral-based partner profiles, trust earned via delivery | **Prototype:** mock partners + live matching view |
-| D. Milestones + impact | Photo-verified milestones, weekly attendance by SMS | **Prototype:** mock projects, milestones, attendance |
+| D. Milestones + impact | Photo-verified milestones, weekly attendance by chat or SMS | **Prototype:** mock projects and milestones; attendance is live from the bot (plus seeded history) |
 
 A is real end to end. B, C and D appear on the dashboard using mock data and simple rules (section 7), so the whole Report → Assess → Match → Deliver → Prove story can be demoed.
 
@@ -392,6 +392,10 @@ After submit, reply with a short thank-you and the `ref_code`.
 
 **Demo target:** completable in under 3 minutes.
 
+### Weekly attendance
+
+A returning reporter who has reported a school gets a home menu: 1 Report a school / 2 Weekly attendance. Attendance asks two numbers (students who came this week, students enrolled) and saves them for the school from that reporter's latest report. `ATT 212 250` (or `PRESENCE 212 250`) does the same in one message from anywhere, which suits SMS; a report in progress is kept. Counts are aggregate only. The webhook saves them with the internal RPC `submit_attendance(p_reporter_id, p_present, p_enrolled)` (service role only), one row per school per week (Monday start, Douala time); sending again that week replaces the numbers.
+
 ### Web chat (judge demo)
 
 Twilio's free trial no longer lets us point the WhatsApp sandbox at our webhook, and we are not paying for anything. So judges use a **WhatsApp-style web chat** (`web/index.html`) opened from a QR code: no app, no join step, greeting in under 2 seconds. It calls the `web-chat` Edge Function, which runs the conversation engine against the real database. Web reporters have no phone number: they are identified by a salted hash of a random browser id, and `phone_e164` / `phone_last4` are NULL. Numbered options are shown as tappable buttons.
@@ -451,4 +455,4 @@ Lint and typecheck scripts are nice to have, not blockers.
 - IVR or voice flows.
 - Dashboard UI code in this repo.
 
-B, C and D are mock data and simple rules only. No real partner onboarding, project workflows, or attendance collection by SMS.
+B, C and D are mock data and simple rules only, except weekly attendance, which the bot collects for real (section 8). No real partner onboarding or project workflows.

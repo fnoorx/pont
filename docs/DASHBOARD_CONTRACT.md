@@ -429,7 +429,7 @@ Show the four parts next to the total (for example as a stacked bar) so staff an
 | `students_enrolled` | number | |
 | `attendance_rate` | number | 0 to 1 |
 
-Only schools with active or finished projects have attendance. A line chart per school shows attendance rising after a project is completed.
+Seeded attendance exists only for schools with active or finished projects. Schools can also send real weekly counts from the bot, so new schools may appear here. A line chart per school shows attendance rising after a project is completed.
 
 ### `dashboard_impact_summary` (exactly one row)
 

@@ -6,6 +6,7 @@ import { cleanText, isSkip, matchOption, normalize, parseCommand, parseNumber } 
 import { t } from "./strings.ts";
 import {
   REF_CODE_TOKEN,
+  type Attendance,
   type Engine,
   type EngineResult,
   type InboundMessage,
@@ -26,6 +27,16 @@ const PRE_CONSENT_STEPS = new Set(["language", "consent"]);
 const RESUME = "resume";
 const MENU = "menu";
 const DONE = "done";
+/** Returning reporters with a school: report another school or send weekly attendance. */
+const HOME = "home";
+const ATT_PRESENT = "att_present";
+const ATT_ENROLLED = "att_enrolled";
+/** Steps that are not part of a school report, so the resume prompt never interrupts them. */
+const NON_REPORT_STEPS = new Set([RESUME, MENU, HOME, ATT_PRESENT, ATT_ENROLLED]);
+const MAX_STUDENTS = 20_000;
+/** "ATT 212 250" (present, enrolled) from anywhere in the chat. Works well over SMS. */
+const ATT_SHORTCUT = /^(?:att|attendance|presence|presences)\s+(\d{1,5})\s+(\d{1,5})$/;
+const ATT_SHORTCUT_START = /^(?:att|attendance|presence|presences)\s+\d/;
 
 type Answers = Record<string, unknown>;
 
@@ -43,6 +54,7 @@ interface Turn {
   status?: Session["status"];
   reporterUpdate?: ReporterUpdate;
   submission?: Submission;
+  attendance?: Attendance;
 }
 
 // ---------------------------------------------------------------------------
@@ -110,6 +122,9 @@ function promptFor(stepId: string, ctx: Ctx): string {
     return t("resume_prompt", lang, { school });
   }
   if (stepId === MENU) return t("menu", lang);
+  if (stepId === HOME) return t("home_menu", lang, { school: ctx.inbound.reporter.lastSchoolName ?? "" });
+  if (stepId === ATT_PRESENT) return t("att_present", lang);
+  if (stepId === ATT_ENROLLED) return t("att_enrolled", lang);
   const step = STEP_BY_ID.get(stepId);
   if (!step) return "";
   if (step.kind === "confirm") return summary(ctx.answers, lang);
@@ -149,6 +164,16 @@ function startReport(ctx: Ctx, lead: string | null): Turn {
   }
   const answers: Answers = { _history: [] };
   return { step: "language", answers, messages: [promptFor("language", { ...ctx, answers })] };
+}
+
+/** First message of a new conversation. Returning reporters with a school get the home menu. */
+function startConversation(ctx: Ctx): Turn {
+  const { language, consentAt, lastSchoolName } = ctx.inbound.reporter;
+  if (consentAt && language && lastSchoolName) {
+    const answers: Answers = { language, _history: [] };
+    return { step: HOME, answers, messages: [promptFor(HOME, { ...ctx, answers })] };
+  }
+  return startReport(ctx, consentAt ? t("welcome_back_new_report", language) : null);
 }
 
 function restart(ctx: Ctx): Turn {
@@ -219,6 +244,72 @@ function handleMenu(ctx: Ctx, input: string): Turn {
     return { step: "language", answers, messages: [promptFor("language", { ...ctx, answers })] };
   }
   return reask(ctx, choiceHint(ctx, 3));
+}
+
+function handleHome(ctx: Ctx, input: string): Turn {
+  const n = parseNumber(input);
+  if (n === 1 || ["report", "signaler"].includes(input)) return startReport(ctx, null);
+  if (n === 2 || ["att", "attendance", "presence", "presences"].includes(input)) {
+    return { step: ATT_PRESENT, answers: ctx.answers, messages: [promptFor(ATT_PRESENT, ctx)] };
+  }
+  return reask(ctx, choiceHint(ctx, 2));
+}
+
+function parseCount(normalized: string): number | null {
+  if (!/^\d{1,5}$/.test(normalized)) return null;
+  const n = Number(normalized);
+  return n <= MAX_STUDENTS ? n : null;
+}
+
+function attendanceThanks(ctx: Ctx, attendance: Attendance): string {
+  return t("att_thanks", languageOf(ctx), {
+    ...attendance,
+    school: ctx.inbound.reporter.lastSchoolName ?? "",
+    rate: Math.round((attendance.present / attendance.enrolled) * 100),
+  });
+}
+
+function handleAttendance(ctx: Ctx, input: string): Turn {
+  const lang = languageOf(ctx);
+  const count = parseCount(input);
+  if (ctx.step === ATT_PRESENT) {
+    if (count === null) return reask(ctx, t("att_hint_number", lang));
+    const answers = { ...ctx.answers, att_present: count };
+    return { step: ATT_ENROLLED, answers, messages: [promptFor(ATT_ENROLLED, { ...ctx, answers })] };
+  }
+  const present = typeof ctx.answers.att_present === "number" ? ctx.answers.att_present : 0;
+  if (count === null || count < 1) return reask(ctx, t("att_hint_number", lang));
+  if (count < present) return reask(ctx, t("att_hint_enrolled", lang, { present }));
+  const attendance = { present, enrolled: count };
+  return { step: DONE, answers: ctx.answers, status: "completed", messages: [attendanceThanks(ctx, attendance)], attendance };
+}
+
+/**
+ * "ATT 212 250" from anywhere. A report in progress is kept: the reply ends with its current question.
+ * Returns null when the message is not an attendance shortcut.
+ */
+function handleShortcut(ctx: Ctx, input: string, active: boolean): Turn | null {
+  if (!ATT_SHORTCUT_START.test(input) || !isConsented(ctx)) return null;
+  const inReport = active && !NON_REPORT_STEPS.has(ctx.step);
+  const reply = (text: string, attendance?: Attendance): Turn => {
+    const turn: Turn = inReport
+      ? { step: ctx.step, answers: ctx.answers, messages: [`${text}\n\n${promptFor(ctx.step, ctx)}`] }
+      : { step: DONE, answers: {}, status: "completed", messages: [text] };
+    return attendance ? { ...turn, attendance } : turn;
+  };
+
+  if (!ctx.inbound.reporter.lastSchoolName) {
+    const lead = t("att_no_school", languageOf(ctx));
+    return inReport ? reply(lead) : startReport(ctx, lead);
+  }
+  const match = ATT_SHORTCUT.exec(input);
+  const present = match ? parseCount(match[1]!) : null;
+  const enrolled = match ? parseCount(match[2]!) : null;
+  if (present === null || enrolled === null || enrolled < 1 || present > enrolled) {
+    return reply(t("att_hint_shortcut", languageOf(ctx)));
+  }
+  const attendance = { present, enrolled };
+  return reply(attendanceThanks(ctx, attendance), attendance);
 }
 
 function handleChoice(ctx: Ctx, step: ChoiceStep, input: string): Turn {
@@ -361,6 +452,7 @@ function toResult(ctx: Ctx, turn: Turn): EngineResult {
   };
   if (turn.reporterUpdate) result.reporterUpdate = turn.reporterUpdate;
   if (turn.submission) result.submission = turn.submission;
+  if (turn.attendance) result.attendance = turn.attendance;
   return result;
 }
 
@@ -374,21 +466,22 @@ export const assessmentEngine: Engine = (session, inbound) => {
     step: active?.step ?? "",
   };
 
-  if (!active) return toResult(ctx, startReport(ctx, ctx.inbound.reporter.consentAt ? t("welcome_back_new_report", ctx.inbound.reporter.language) : null));
-
-  const idle = Date.parse(inbound.receivedAt) - Date.parse(active.updatedAt);
-  if (idle > SESSION_EXPIRY_MS) {
-    return toResult(ctx, startReport(ctx, ctx.inbound.reporter.consentAt ? t("welcome_back_new_report", ctx.inbound.reporter.language) : null));
-  }
-
   const input = normalize(inbound.text);
+  const idle = active ? Date.parse(inbound.receivedAt) - Date.parse(active.updatedAt) : 0;
+  const live = Boolean(active) && idle <= SESSION_EXPIRY_MS;
+
+  const shortcut = handleShortcut(ctx, input, live);
+  if (shortcut) return toResult(ctx, shortcut);
+
+  if (!live) return toResult(ctx, startConversation(ctx));
+
   const command = parseCommand(input);
   if (command) {
     const turn = handleCommand(ctx, command);
     if (turn) return toResult(ctx, turn);
   }
 
-  const midReport = !PRE_CONSENT_STEPS.has(ctx.step) && ctx.step !== RESUME && ctx.step !== MENU;
+  const midReport = !PRE_CONSENT_STEPS.has(ctx.step) && !NON_REPORT_STEPS.has(ctx.step);
   if (idle > RESUME_GAP_MS && midReport) {
     const answers = { ...ctx.answers, _return_to: ctx.step };
     return toResult(ctx, { step: RESUME, answers, messages: [promptFor(RESUME, { ...ctx, answers })] });
@@ -396,6 +489,8 @@ export const assessmentEngine: Engine = (session, inbound) => {
 
   if (ctx.step === RESUME) return toResult(ctx, handleResume(ctx, input));
   if (ctx.step === MENU) return toResult(ctx, handleMenu(ctx, input));
+  if (ctx.step === HOME) return toResult(ctx, handleHome(ctx, input));
+  if (ctx.step === ATT_PRESENT || ctx.step === ATT_ENROLLED) return toResult(ctx, handleAttendance(ctx, input));
 
   const step = STEP_BY_ID.get(ctx.step);
   if (!step) return toResult(ctx, startReport(ctx, null));

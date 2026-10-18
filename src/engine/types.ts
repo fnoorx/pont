@@ -14,6 +14,8 @@ export interface ReporterSnapshot {
   language: Language | null;
   role: Role | null;
   consentAt: string | null;
+  /** Name of the school from this reporter's latest report, if any. Weekly attendance goes to it. */
+  lastSchoolName?: string | null;
 }
 
 /** A conversation session as persisted in the `sessions` table. `id` is null until first saved. */
@@ -85,6 +87,14 @@ export interface EngineResult {
   outboundMessages: OutboundMessage[];
   reporterUpdate?: ReporterUpdate;
   submission?: Submission;
+  /** A weekly attendance count for the reporter's latest school. */
+  attendance?: Attendance;
+}
+
+/** Aggregate counts only, never student-level data. */
+export interface Attendance {
+  present: number;
+  enrolled: number;
 }
 
 export type Engine = (session: Session | null, inbound: InboundMessage) => EngineResult;

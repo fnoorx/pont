@@ -59,6 +59,42 @@ export const STRINGS = {
     fr: "C'est la première question.",
   },
 
+  // Home menu for returning reporters who already reported a school.
+  home_menu: {
+    en: "Welcome back to Pont. What would you like to do?\n1. Report a school\n2. Weekly attendance for {school}",
+    fr: "Bon retour sur Pont. Que voulez-vous faire ?\n1. Signaler une école\n2. Présences de la semaine pour {school}",
+  },
+
+  // Weekly attendance (aggregate counts only).
+  att_present: {
+    en: "About how many students came to school this week? Reply with a number, for example 212.",
+    fr: "Combien d'élèves sont venus à l'école cette semaine environ ? Répondez avec un nombre, par exemple 212.",
+  },
+  att_enrolled: {
+    en: "And how many students are enrolled in total? For example 250.",
+    fr: "Et combien d'élèves sont inscrits au total ? Par exemple 250.",
+  },
+  att_hint_number: {
+    en: "Please reply with a number, for example 212.",
+    fr: "Merci de répondre avec un nombre, par exemple 212.",
+  },
+  att_hint_enrolled: {
+    en: "Enrolled must be at least the number who came ({present}). Please reply with a number.",
+    fr: "Le nombre d'inscrits doit être au moins égal aux présents ({present}). Merci de répondre avec un nombre.",
+  },
+  att_hint_shortcut: {
+    en: "Send ATT, then students present, then students enrolled. For example: ATT 212 250.",
+    fr: "Envoyez ATT, puis le nombre de présents, puis le nombre d'inscrits. Par exemple : ATT 212 250.",
+  },
+  att_no_school: {
+    en: "You can send attendance once you have reported your school. Let's report it first.",
+    fr: "Vous pourrez envoyer les présences après avoir signalé votre école. Commençons par la signaler.",
+  },
+  att_thanks: {
+    en: "Thank you! {present} of {enrolled} students came to {school} this week ({rate}%). Next week you can just send ATT {present} {enrolled}.",
+    fr: "Merci ! {present} élèves sur {enrolled} sont venus à {school} cette semaine ({rate} %). La semaine prochaine, envoyez simplement ATT {present} {enrolled}.",
+  },
+
   // Summary and submission.
   summary_intro: {
     en: "Please check your report:",

@@ -1,5 +1,5 @@
 // In-memory Store for tests and the offline simulator. Not for production use.
-import type { ReporterSnapshot, ReporterUpdate, Session, Submission } from "../engine/types.ts";
+import type { Attendance, ReporterSnapshot, ReporterUpdate, Session, Submission } from "../engine/types.ts";
 import type { MessageLogRow, NewReporter, Store } from "./store.ts";
 
 type StoredReporter = ReporterSnapshot & { phoneHash: string; phoneE164: string | null; phoneLast4: string | null };
@@ -11,6 +11,7 @@ export class MemoryStore implements Store {
   messages: MessageLogRow[] = [];
   uploads: { path: string; size: number; contentType: string }[] = [];
   submissions: { reporterId: string; submission: Submission; refCode: string }[] = [];
+  attendance: ({ reporterId: string; school: string } & Attendance)[] = [];
 
   async markProcessed(sid: string): Promise<boolean> {
     if (this.processed.has(sid)) return false;
@@ -20,7 +21,7 @@ export class MemoryStore implements Store {
 
   async findOrCreateReporter(r: NewReporter): Promise<ReporterSnapshot> {
     const existing = [...this.reporters.values()].find((x) => x.phoneHash === r.phoneHash);
-    if (existing) return existing;
+    if (existing) return { ...existing, lastSchoolName: this.lastSubmission(existing.id)?.submission.school.name ?? null };
     const created: StoredReporter = { id: `r${this.reporters.size + 1}`, language: null, role: null, consentAt: null, ...r };
     this.reporters.set(created.id, created);
     return created;
@@ -58,5 +59,15 @@ export class MemoryStore implements Store {
     const refCode = `PS-T${String(this.submissions.length + 1).padStart(3, "0")}`;
     this.submissions.push({ reporterId, submission, refCode });
     return refCode;
+  }
+
+  async submitAttendance(reporterId: string, attendance: Attendance): Promise<void> {
+    const last = this.lastSubmission(reporterId);
+    if (!last) throw new Error(`reporter ${reporterId} has no reported school`);
+    this.attendance.push({ reporterId, school: last.submission.school.name, ...attendance });
+  }
+
+  private lastSubmission(reporterId: string) {
+    return this.submissions.filter((s) => s.reporterId === reporterId).at(-1);
   }
 }

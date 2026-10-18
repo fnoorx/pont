@@ -19,6 +19,20 @@ function toSnapshot(row: ReporterRow): ReporterSnapshot {
 }
 
 export function createSupabaseStore(db: SupabaseClient): Store {
+  /** School name from the reporter's latest report, so the bot can offer weekly attendance. */
+  async function lastSchoolName(reporterId: string): Promise<string | null> {
+    const { data, error } = await db
+      .from("assessments")
+      .select("schools(name)")
+      .eq("reporter_id", reporterId)
+      .order("submitted_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) throw new Error(`load last school: ${error.message}`);
+    const school = (data as { schools: { name: string } | null } | null)?.schools;
+    return school?.name ?? null;
+  }
+
   return {
     async markProcessed(messageSid) {
       const { error } = await db.from("processed_messages").insert({ message_sid: messageSid });
@@ -31,7 +45,10 @@ export function createSupabaseStore(db: SupabaseClient): Store {
       const columns = "id, channel, language, role, consent_at";
       const existing = await db.from("reporters").select(columns).eq("phone_hash", r.phoneHash).maybeSingle();
       if (existing.error) throw new Error(`load reporter: ${existing.error.message}`);
-      if (existing.data) return toSnapshot(existing.data as ReporterRow);
+      if (existing.data) {
+        const row = existing.data as ReporterRow;
+        return { ...toSnapshot(row), lastSchoolName: await lastSchoolName(row.id) };
+      }
 
       const inserted = await db
         .from("reporters")
@@ -106,6 +123,15 @@ export function createSupabaseStore(db: SupabaseClient): Store {
       if (error) throw new Error(`submit assessment: ${error.message}`);
       if (typeof data !== "string") throw new Error("submit assessment: no ref_code returned");
       return data;
+    },
+
+    async submitAttendance(reporterId, attendance) {
+      const { error } = await db.rpc("submit_attendance", {
+        p_reporter_id: reporterId,
+        p_present: attendance.present,
+        p_enrolled: attendance.enrolled,
+      });
+      if (error) throw new Error(`submit attendance: ${error.message}`);
     },
   };
 }

@@ -117,13 +117,12 @@ This is a hackathon prototype built on fictional data.
 | Assess | Real rules: `dashboard_readiness` scores every school live (Tier 0/1/2) |
 | Match | Real rules on mock partners: `dashboard_partner_matches` |
 | Deliver | Mock projects and photo milestones |
-| Prove | Mock weekly attendance and an impact summary |
+| Prove | Real: headteachers send weekly attendance in the chat (or `ATT 212 250`), shown on the Impact page next to seeded history |
 
 ## What a real pilot would add
 
 - **Verified partner onboarding:** real partner sign-up, reference checks and a referral workflow, instead of mock partners.
 - **Project management:** staff create projects, assign partners and approve milestone photos from the dashboard.
-- **Attendance by SMS:** a short weekly SMS flow for headteachers to report attendance counts.
 - **School matching:** recognise when two reports are about the same school, instead of creating a new school each time.
 - **WhatsApp Business API and SMS:** a dedicated, verified WhatsApp number plus an SMS gateway, both feeding the same engine as the web chat.
 - **Message templates:** approved WhatsApp templates so PS43 can message reporters first (reminders, follow-ups).
