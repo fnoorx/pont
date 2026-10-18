@@ -35,7 +35,7 @@ This is a **hackathon prototype**, not production software. The goal is a workin
 - Don't spend time on production hardening:
   - deduplication
   - idempotency
-  - retries
+  - retries (one deliberate exception: the web chat waits for signal and resends, because patchy signal is a pitch point. It reuses the message id, and the webhook answers a repeated id with the replies it already sent, so nothing is processed twice)
   - rate limiting
   - message audit logs
   - data retention jobs

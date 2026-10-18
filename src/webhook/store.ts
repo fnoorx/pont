@@ -28,6 +28,11 @@ export interface MessageLogRow {
 export interface Store {
   /** Records the message SID. Returns false if it was already processed. */
   markProcessed(messageSid: string): Promise<boolean>;
+  /** Replies already sent for this message, or null if none were saved (yet). */
+  previousReplies(messageSid: string): Promise<string[] | null>;
+  saveReplies(messageSid: string, replies: string[]): Promise<void>;
+  /** Forgets a message whose processing failed, so a retry with the same id is processed again. */
+  forgetMessage(messageSid: string): Promise<void>;
   findOrCreateReporter(reporter: NewReporter): Promise<ReporterSnapshot>;
   loadActiveSession(reporterId: string): Promise<Session | null>;
   saveSession(reporterId: string, session: Session): Promise<void>;

@@ -29,6 +29,21 @@ export class MemoryStore implements Store {
     return true;
   }
 
+  replies = new Map<string, string[]>();
+
+  async previousReplies(sid: string): Promise<string[] | null> {
+    return this.replies.get(sid) ?? null;
+  }
+
+  async saveReplies(sid: string, replies: string[]): Promise<void> {
+    this.replies.set(sid, replies);
+  }
+
+  async forgetMessage(sid: string): Promise<void> {
+    this.processed.delete(sid);
+    this.replies.delete(sid);
+  }
+
   async findOrCreateReporter(r: NewReporter): Promise<ReporterSnapshot> {
     const existing = [...this.reporters.values()].find((x) => x.phoneHash === r.phoneHash);
     if (existing) return { ...existing, lastSchoolName: this.lastSubmission(existing.id)?.submission.school.name ?? null };

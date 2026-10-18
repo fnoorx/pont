@@ -64,4 +64,17 @@ describe("web chat handler", () => {
     expect((await send({ clientId: "not-a-uuid" } as Partial<WebChatRequest>)).status).toBe(400);
     expect((await send({ image: { dataUrl: "data:text/html;base64,PGgxPg==" } })).status).toBe(400);
   });
+
+  it("answers an unexpected error as JSON with CORS headers, so the browser does not mistake it for no signal", async () => {
+    const handler = createWebChatHandler({ processInbound: async () => { throw new Error("db down"); } });
+    const res = await handler(
+      new Request("http://local/web-chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientId, messageId: nextId(), text: "hi" }),
+      }),
+    );
+    expect(res.status).toBe(500);
+    expect(res.headers.get("Access-Control-Allow-Origin")).toBe("*");
+  });
 });

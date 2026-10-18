@@ -53,14 +53,21 @@ export function createWebChatHandler(deps: WebChatDeps): (req: Request) => Promi
       ? [{ url: body.image.dataUrl, contentType: body.image.dataUrl.slice(5, body.image.dataUrl.indexOf(";")) }]
       : [];
 
-    const replies = await deps.processInbound({
-      messageSid: `WEB${body.messageId.replace(/-/g, "")}`,
-      from: body.clientId,
-      channel: "web",
-      text: body.text.trim(),
-      media,
-      location: body.location ?? null,
-    });
-    return json({ replies });
+    // Always answer with CORS headers, even on an unexpected error: otherwise the browser
+    // reports a network failure and the chat would wait for a signal that is already there.
+    try {
+      const replies = await deps.processInbound({
+        messageSid: `WEB${body.messageId.replace(/-/g, "")}`,
+        from: body.clientId,
+        channel: "web",
+        text: body.text.trim(),
+        media,
+        location: body.location ?? null,
+      });
+      return json({ replies });
+    } catch (err) {
+      console.error(JSON.stringify({ message: "web chat error", error: err instanceof Error ? err.message : String(err) }));
+      return json({ error: "Server error" }, 500);
+    }
   };
 }

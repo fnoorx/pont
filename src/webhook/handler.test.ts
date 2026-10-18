@@ -27,23 +27,55 @@ describe("inbound processor", () => {
     store = new MemoryStore();
   });
 
-  it("creates a hashed reporter, a session and an audit log", async () => {
+  /** Language and consent, as every reporter does first. Message ids C1..C3. */
+  const consent = async () => {
+    for (const [i, text] of ["hi", "1", "1"].entries()) await processor()(inbound(`SM${"c".repeat(31)}${i}`, { text }));
+  };
+
+  it("creates a hashed reporter and a session, and logs nothing before consent", async () => {
     const replies = await processor()(inbound(SID1));
     expect(replies[0]).toContain("Choose your language");
     const [reporter] = [...store.reporters.values()];
     expect(reporter?.phoneHash).toMatch(/^[0-9a-f]{64}$/);
     expect(reporter?.phoneLast4).toBe("0001");
     expect(store.sessions.size).toBe(1);
-    expect(store.messages.map((m) => m.direction)).toEqual(["inbound", "outbound"]);
+    expect(store.messages).toEqual([]);
   });
 
-  it("ignores duplicate deliveries of the same message", async () => {
-    await processor()(inbound(SID1));
-    expect(await processor()(inbound(SID1))).toEqual([]);
-    expect(store.messages).toHaveLength(2);
+  it("starts the message log with the consent message", async () => {
+    await consent();
+    expect(store.messages[0]).toMatchObject({ direction: "inbound", body: "1" });
+    expect(store.messages.some((m) => m.body === "hi")).toBe(false);
+  });
+
+  it("stores nothing when consent is declined, and never uploads a photo sent before consent", async () => {
+    const photo = { url: "data:image/jpeg;base64,AAAA", contentType: "image/jpeg" };
+    await processor()(inbound(SID1, { text: "", media: [photo] }));
+    await processor()(inbound(SID2, { text: "1" }));
+    await processor()(inbound("SM" + "3".repeat(32), { text: "2" }));
+    expect(store.uploads).toEqual([]);
+    expect(store.messages).toEqual([]);
+  });
+
+  it("sends the same replies again when a message is retried after a lost response", async () => {
+    const first = await processor()(inbound(SID1));
+    const retry = await processor()(inbound(SID1));
+    expect(retry).toEqual(first);
+    expect(retry[0]).toContain("Choose your language");
+    expect(store.sessions.size).toBe(1);
+  });
+
+  it("processes a retry again when the first attempt failed", async () => {
+    const broken: Engine = () => {
+      throw new Error("boom");
+    };
+    await processor(broken)(inbound(SID1));
+    const retry = await processor()(inbound(SID1));
+    expect(retry[0]).toContain("Choose your language");
   });
 
   it("stores media in a pending path and skips unsupported types", async () => {
+    await consent();
     await processor()(
       inbound(SID2, {
         text: "",
@@ -54,12 +86,13 @@ describe("inbound processor", () => {
       }),
     );
     expect(store.uploads).toEqual([{ path: `pending/r1/${SID2}-0.jpg`, size: 3, contentType: "image/jpeg" }]);
-    expect(store.messages[0]?.body).toBe("[photo] [file]");
+    expect(store.messages.at(-2)?.body).toBe("[photo] [file]");
   });
 
   it("never writes location coordinates to the audit log", async () => {
+    await consent();
     await processor()(inbound(SID1, { text: "", location: { lat: 5.96311, lng: 10.15912 } }));
-    expect(store.messages[0]?.body).toBe("[location]");
+    expect(store.messages.at(-2)?.body).toBe("[location]");
     expect(JSON.stringify(store.messages)).not.toContain("5.963");
   });
 

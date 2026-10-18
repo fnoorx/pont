@@ -245,7 +245,7 @@
 
   function save() {
     // Photos are not kept in storage (size), only a placeholder.
-    store.set("pont.transcript", JSON.stringify(transcript.slice(-120).map((m) => ({ ...m, image: m.image ? "kept" : undefined }))));
+    store.set("pont.transcript", JSON.stringify(transcript.slice(-120).map(({ row, el, ...m }) => ({ ...m, image: m.image ? "kept" : undefined }))));
   }
 
   function toast(text) {
@@ -283,7 +283,7 @@
   }
 
   function markRead() {
-    for (const m of transcript) if (m.el) m.el.classList.add("read");
+    for (const m of transcript) if (m.el && !m.pending) m.el.classList.add("read");
   }
 
   // Turn "1. English" lines and "Reply 0 to skip" into tap targets.
@@ -337,53 +337,112 @@
     Math.min(MAX_TYPING_MS, Math.max(600, 450 + text.length * 8 + (Math.random() - 0.5) * 500));
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-  // Like WhatsApp on patchy signal: if the phone can't reach the server at all, keep the message
-  // and send it by itself when the connection comes back. Gives up after 2 minutes ("Tap to retry").
-  // Server errors are not retried here. The same messageId is reused, so the server never
-  // processes a message twice.
+  // Like WhatsApp on patchy signal: if the phone can't reach the server, keep the message and send it
+  // by itself when the connection comes back (up to 2 minutes, then "Tap to retry"). Every attempt,
+  // including "Tap to retry", reuses the message id, and the server answers an id it has already
+  // handled with the same replies, so a message is never processed twice and no reply is lost.
+  // Server errors come back as HTTP errors and go straight to "Tap to retry".
   const RETRY_FOR_MS = 120000;
-  const waitForSignal = () => new Promise((resolve) => {
+  const WAITING_TEXT = "Waiting for signal, it will send by itself · En attente de réseau, envoi automatique";
+  const FAILED_TEXT = "Not sent. Tap to retry · Non envoyé. Touchez pour réessayer";
+  const RESEND_TEXT = "Not sent. Please send it again · Non envoyé, merci de le renvoyer";
+  const BUSY_TEXT = "Wait for the reply, then send · Attendez la réponse, puis envoyez";
+  let generation = 0; // bumped by New chat, so replies to the old chat are dropped
+  let inflight = null; // AbortController of the request in flight
+
+  // Resolves when the browser says it is online again, or after `ms`, whichever comes first.
+  const waitForSignal = (ms) => new Promise((resolve) => {
     const done = () => { clearTimeout(timer); window.removeEventListener("online", done); resolve(); };
-    const timer = setTimeout(done, 5000);
+    const timer = setTimeout(done, ms);
     window.addEventListener("online", done);
   });
 
   function setWaiting(entry, on) {
-    statusEl.textContent = on ? "waiting for network…" : "online";
-    if (on) showTyping(false);
     const note = entry?.row?.querySelector(".waiting");
-    if (on && entry?.row && !note) {
-      const el = document.createElement("div");
-      el.className = "failed waiting";
-      el.textContent = "Waiting for signal. It will send by itself.";
-      entry.row.appendChild(el);
-    } else if (!on && note) note.remove();
+    if (on) {
+      showTyping(false);
+      statusEl.textContent = "waiting for network…";
+      if (entry?.row && !note) {
+        const el = document.createElement("div");
+        el.className = "failed waiting";
+        el.textContent = WAITING_TEXT;
+        entry.row.appendChild(el);
+      }
+    } else if (note) {
+      note.remove();
+      showTyping(true); // back to "typing…" while the reply arrives
+    }
   }
 
-  async function post(payload, entry) {
+  async function post(payload, entry, gen) {
     const giveUpAt = Date.now() + RETRY_FOR_MS;
+    // A stalled request (weak 2G) never errors on its own, so each attempt has a time limit.
+    const attemptMs = payload.image ? 90000 : 30000;
+    let pause = 5000;
     for (;;) {
-      try {
-        const res = await fetch(API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-        setWaiting(entry, false);
-        return res;
-      } catch (err) {
-        if (Date.now() > giveUpAt) { setWaiting(entry, false); throw err; }
+      if (navigator.onLine === false) {
+        // No point uploading (maybe a photo) while the phone itself says it is offline.
         setWaiting(entry, true);
-        await waitForSignal();
+        await waitForSignal(pause);
+      } else {
+        const controller = new AbortController();
+        inflight = controller;
+        const timer = setTimeout(() => controller.abort(), attemptMs);
+        try {
+          const res = await fetch(API, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+            signal: controller.signal,
+          });
+          setWaiting(entry, false);
+          return res;
+        } catch (err) {
+          if (gen !== generation) throw err;
+          setWaiting(entry, true);
+          await waitForSignal(pause);
+          pause = Math.min(pause * 2, 30000);
+        } finally {
+          clearTimeout(timer);
+          if (inflight === controller) inflight = null;
+        }
+      }
+      if (gen !== generation) throw new Error("cancelled by New chat");
+      if (Date.now() > giveUpAt) {
+        setWaiting(entry, false);
+        throw new Error("no signal for 2 minutes");
       }
     }
   }
 
-  async function send({ text = "", display, image, location: loc, hidden = false }) {
-    if (busy) return;
+  /** Marks a message as not sent. Text can be retried with the same id; a photo or location must be sent again. */
+  function showFailed(entry, retry) {
+    entry.row.querySelector(".failed")?.remove();
+    const fail = document.createElement("div");
+    fail.className = "failed";
+    fail.textContent = retry ? FAILED_TEXT : RESEND_TEXT;
+    if (retry) {
+      fail.addEventListener("click", () => {
+        if (busy) return toast(BUSY_TEXT);
+        fail.remove();
+        send({ ...retry, entry });
+      });
+    }
+    entry.row.appendChild(fail);
+  }
+
+  async function send({ text = "", display, image, location: loc, hidden = false, messageId = uuid(), entry = null }) {
+    if (busy) {
+      if (!hidden) toast(BUSY_TEXT);
+      return false;
+    }
     busy = true;
     sendBtn.disabled = true;
     chips.textContent = "";
-    const messageId = uuid();
-    let entry = null;
-    if (!hidden) {
-      entry = { from: "out", text: display ?? text, image, time: Date.now() };
+    const gen = generation;
+    if (!hidden && !entry) {
+      // Saved as pending until the server answers, so a reload never shows it as delivered.
+      entry = { from: "out", text: display ?? text, image, time: Date.now(), pending: true, messageId, retryText: image || loc ? undefined : text };
       transcript.push(entry);
       render(entry);
       save();
@@ -394,14 +453,17 @@
       const payload = { clientId, messageId, text };
       if (image) payload.image = { dataUrl: image };
       if (loc) payload.location = loc;
-      const res = await post(payload, entry);
+      const res = await post(payload, entry, gen);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
+      if (gen !== generation) return true;
+      if (entry) delete entry.pending;
       markRead(); // blue ticks first, then "typing...", like WhatsApp
       for (const [i, reply] of (data.replies || []).entries()) {
         const alreadyWaited = i === 0 ? performance.now() - started : 0;
         showTyping(true);
         await sleep(Math.max(0, typingTime(reply) - alreadyWaited));
+        if (gen !== generation) return true;
         showTyping(false);
         const m = { from: "in", text: reply, time: Date.now() };
         transcript.push(m);
@@ -412,26 +474,18 @@
       const last = (data.replies || []).at(-1);
       updateChips(last);
     } catch (err) {
+      if (gen !== generation) return true; // the chat was reset; this request no longer matters
       showTyping(false);
-      if (entry?.row) {
-        const fail = document.createElement("div");
-        fail.className = "failed";
-        fail.textContent = "Not sent. Tap to retry.";
-        fail.addEventListener("click", () => {
-          entry.row.remove();
-          transcript.splice(transcript.indexOf(entry), 1);
-          busy = false;
-          send({ text, display, image, location: loc });
-        });
-        entry.row.appendChild(fail);
-      } else {
-        toast("Could not reach Pont. Check your connection.");
-      }
+      if (entry?.row) showFailed(entry, entry.retryText !== undefined || image || loc ? { text, display, image, location: loc, messageId } : null);
+      else toast("Could not reach Pont. Check your connection.");
       console.error(err);
     } finally {
-      busy = false;
-      sendBtn.disabled = false;
+      if (gen === generation) {
+        busy = false;
+        sendBtn.disabled = false;
+      }
     }
+    return true;
   }
 
   // Downsize photos in the browser so uploads are fast on mobile data.
@@ -466,6 +520,7 @@
   function sendTyped() {
     const text = input.value.trim();
     if (!text) return;
+    if (busy) return toast(BUSY_TEXT); // keep the typed text until it can be sent
     input.value = "";
     input.style.height = "";
     send({ text });
@@ -496,6 +551,12 @@
   });
   $("newChat").addEventListener("click", () => {
     if (!confirm("Start a new chat? / Nouvelle conversation ?")) return;
+    // Cancel anything still sending, so the old chat's replies never land in the new one.
+    generation++;
+    inflight?.abort();
+    busy = false;
+    sendBtn.disabled = false;
+    showTyping(false);
     clientId = uuid();
     store.set("pont.clientId", clientId);
     store.del("pont.transcript");
@@ -509,6 +570,10 @@
   if (transcript.length) {
     for (const m of transcript) render(m);
     markRead();
+    // A message still pending when the page closed was never confirmed: offer to send it again.
+    for (const m of transcript) {
+      if (m.pending && m.row) showFailed(m, m.retryText !== undefined ? { text: m.retryText, display: m.text, messageId: m.messageId } : null);
+    }
     updateChips([...transcript].reverse().find((m) => m.from === "in")?.text);
   } else {
     send({ text: "Hi", hidden: true });

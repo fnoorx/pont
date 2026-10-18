@@ -41,6 +41,22 @@ export function createSupabaseStore(db: SupabaseClient): Store {
       throw new Error(`markProcessed: ${error.message}`);
     },
 
+    async previousReplies(messageSid) {
+      const { data, error } = await db.from("processed_messages").select("replies").eq("message_sid", messageSid).maybeSingle();
+      if (error) throw new Error(`previous replies: ${error.message}`);
+      return Array.isArray(data?.replies) ? (data.replies as string[]) : null;
+    },
+
+    async saveReplies(messageSid, replies) {
+      const { error } = await db.from("processed_messages").update({ replies }).eq("message_sid", messageSid);
+      if (error) throw new Error(`save replies: ${error.message}`);
+    },
+
+    async forgetMessage(messageSid) {
+      const { error } = await db.from("processed_messages").delete().eq("message_sid", messageSid);
+      if (error) throw new Error(`forget message: ${error.message}`);
+    },
+
     async findOrCreateReporter(r) {
       const columns = "id, channel, language, role, consent_at";
       const existing = await db.from("reporters").select(columns).eq("phone_hash", r.phoneHash).maybeSingle();

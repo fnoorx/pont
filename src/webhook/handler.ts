@@ -95,10 +95,27 @@ export function createInboundProcessor(deps: ProcessorDeps): (parsed: ParsedInbo
     return stored;
   }
 
+  const fail = (parsed: ParsedInbound, language: Language | null, err: unknown): string[] => {
+    log("error handling message", {
+      messageSid: parsed.messageSid,
+      error: err instanceof Error ? err.message : String(err),
+    });
+    const error = language ? t("error_generic", language) : bilingual("error_generic");
+    return [parsed.channel === "sms" ? toGsm7(error) : error];
+  };
+
   return async (parsed) => {
-    if (!(await store.markProcessed(parsed.messageSid))) {
-      log("ignored: duplicate", { messageSid: parsed.messageSid });
-      return [];
+    let fresh: boolean;
+    try {
+      fresh = await store.markProcessed(parsed.messageSid);
+      if (!fresh) {
+        // A retry of a message whose response was lost: send the same replies again,
+        // so the reporter still gets the next question and its buttons.
+        log("duplicate: resending replies", { messageSid: parsed.messageSid });
+        return (await store.previousReplies(parsed.messageSid)) ?? [];
+      }
+    } catch (err) {
+      return fail(parsed, null, err);
     }
 
     let language: Language | null = null;
@@ -115,7 +132,9 @@ export function createInboundProcessor(deps: ProcessorDeps): (parsed: ParsedInbo
       language = reporter.language;
 
       const session: Session | null = await store.loadActiveSession(reporter.id);
-      const media = await downloadMedia(reporter.id, parsed.messageSid, parsed.media);
+      // Nothing a person sends is stored before they consent: no photo uploads, no message log.
+      const consentedBefore = reporter.consentAt !== null;
+      const media = consentedBefore ? await downloadMedia(reporter.id, parsed.messageSid, parsed.media) : [];
       // A partner milestone command ("DONE PJ-104") needs the project, which the pure engine cannot look up.
       const projectCode = parseMilestoneCode(normalize(parsed.text));
 
@@ -144,19 +163,24 @@ export function createInboundProcessor(deps: ProcessorDeps): (parsed: ParsedInbo
         const text = refCode ? m.text.replaceAll(REF_CODE_TOKEN, refCode) : m.text;
         return parsed.channel === "sms" ? toGsm7(text) : text;
       });
-      const logRows: MessageLogRow[] = [
-        { reporterId: reporter.id, direction: "inbound", body: inboundLogBody(parsed) },
-        ...outbound.map((body) => ({ reporterId: reporter.id, direction: "outbound" as const, body })),
-      ];
-      await store.logMessages(logRows);
+      if (consentedBefore || result.reporterUpdate?.consentAt) {
+        const logRows: MessageLogRow[] = [
+          { reporterId: reporter.id, direction: "inbound", body: inboundLogBody(parsed) },
+          ...outbound.map((body) => ({ reporterId: reporter.id, direction: "outbound" as const, body })),
+        ];
+        await store.logMessages(logRows);
+      }
+      try {
+        await store.saveReplies(parsed.messageSid, outbound);
+      } catch (err) {
+        // The message was handled; only a lost-response retry would miss these replies.
+        log("could not save replies", { messageSid: parsed.messageSid, error: err instanceof Error ? err.message : String(err) });
+      }
       return outbound;
     } catch (err) {
-      log("error handling message", {
-        messageSid: parsed.messageSid,
-        error: err instanceof Error ? err.message : String(err),
-      });
-      const error = language ? t("error_generic", language) : bilingual("error_generic");
-      return [parsed.channel === "sms" ? toGsm7(error) : error];
+      // Let a retry with the same id be processed again instead of being treated as a duplicate.
+      await store.forgetMessage(parsed.messageSid).catch(() => {});
+      return fail(parsed, language, err);
     }
   };
 }
