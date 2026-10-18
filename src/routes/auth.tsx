@@ -8,9 +8,9 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "PS43 Foundation — Staff sign in" },
+      { title: "Staff sign in · PS43 Foundation" },
       { name: "description", content: "Staff sign in for the PS43 Foundation schools dashboard." },
-      { property: "og:title", content: "PS43 Foundation — Staff sign in" },
+      { property: "og:title", content: "Staff sign in · PS43 Foundation" },
       { property: "og:description", content: "Staff sign in for the PS43 Foundation schools dashboard." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

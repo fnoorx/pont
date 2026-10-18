@@ -13,9 +13,9 @@ export const Route = createFileRoute("/live-schools")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "PS43 Foundation — Schools dashboard" },
+      { title: "Schools dashboard · PS43 Foundation" },
       { name: "description", content: "Map, need rankings and field reports for PS43 Foundation schools in Cameroon." },
-      { property: "og:title", content: "PS43 Foundation — Schools dashboard" },
+      { property: "og:title", content: "Schools dashboard · PS43 Foundation" },
       { property: "og:description", content: "Map, need rankings and field reports for PS43 Foundation schools in Cameroon." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
