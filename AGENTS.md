@@ -156,6 +156,7 @@ The dashboard is built against this section. Keep names stable.
 | `media type` | `photo`, `audio` |
 | `tier` (B) | `tier0`, `tier1`, `tier2` |
 | `partner type` (C) | `ngo`, `community_org`, `contractor`, `supplier` |
+| `resource kind` (C) | `equipment`, `funding`, `expertise` |
 | `trust_level` (C) | `new`, `referred`, `proven` |
 | `project status` (D) | `planned`, `in_progress`, `completed` |
 | `milestone status` (D) | `pending`, `done` |
@@ -352,6 +353,14 @@ Dependency rules (infrastructure is a chain: safe building → power → devices
 
 **`dashboard_impact_summary`** (D, exactly one row of headline numbers)
 - `school_count`, `assessment_count`, `verified_count`, `partner_count`, `proven_partner_count`, `projects_planned`, `projects_in_progress`, `projects_completed`, `students_reached`, `attendance_before`, `attendance_after`
+
+**`dashboard_package_costs`** (C, one row per assessed school)
+- `school_id`, `school_name`, `region_code`, `region_name`, `is_sensitive`, `tier`, `stated_need`, `recommended_need`, `package`, `first_step_cost_usd`, `package_cost_usd`, `priority_rank`
+- Costs come from the reference table `intervention_costs` (one rough estimate per need, labelled as an estimate).
+
+**`dashboard_resources`** (C, one row per resource, mock data in `resources`)
+- `id`, `name`, `kind` (`equipment`, `funding`, `expertise`), `need` (NULL = any), `quantity`, `unit`, `value_usd`, `location`, `provider`
+- `schools_wanting` (need anywhere in the package), `schools_ready` (need is first), `schools_blocked` (something comes first), `unlock_need` (most common first step for the blocked schools), `unlock_cost_usd` (estimated cost of those first steps)
 
 ### RPC
 - `set_assessment_verified(assessment_id uuid, verified boolean) returns void`

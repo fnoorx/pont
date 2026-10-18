@@ -359,3 +359,33 @@ export const PROJECTS: SeedProject[] = [
     ],
   },
 ];
+
+// ---------------------------------------------------------------------------
+// Resources (prototype mock data): what PS43 could deploy. All providers are fictional.
+// ---------------------------------------------------------------------------
+
+export type ResourceKind = "equipment" | "funding" | "expertise";
+
+export interface SeedResource {
+  name: string;
+  kind: ResourceKind;
+  /** null = any need (unrestricted funding). */
+  need: TopNeed | null;
+  quantity?: number;
+  unit?: string;
+  valueUsd?: number;
+  location: string;
+  provider: string;
+}
+
+export const RESOURCES: SeedResource[] = [
+  { name: "Refurbished laptops", kind: "equipment", need: "computers", quantity: 40, unit: "laptops", valueUsd: 6000, location: "Toronto (to ship)", provider: "Maplewood Tech Recyclers (fictional)" },
+  { name: "Tablets with offline lessons", kind: "equipment", need: "computers", quantity: 30, unit: "tablets", valueUsd: 4500, location: "Douala warehouse", provider: "Kribi Digital Supplies (fictional)" },
+  { name: "Solar classroom kits", kind: "equipment", need: "power", quantity: 5, unit: "kits", valueUsd: 17500, location: "Douala", provider: "Soleil Wouri Énergie (fictional)" },
+  { name: "Desk-benches", kind: "equipment", need: "furniture", quantity: 200, unit: "desk-benches", valueUsd: 6000, location: "Yaoundé workshop", provider: "Atelier Mfoundi (fictional)" },
+  { name: "Solar fund", kind: "funding", need: "power", valueUsd: 10000, location: "PS43", provider: "Northern Lights Family Foundation (fictional)" },
+  { name: "Book drive", kind: "funding", need: "supplies", valueUsd: 3000, location: "PS43", provider: "Toronto community book drive (fictional)" },
+  { name: "Unrestricted fund", kind: "funding", need: null, valueUsd: 25000, location: "PS43", provider: "PS43 general donations" },
+  { name: "Volunteer teacher trainers", kind: "expertise", need: "training", quantity: 6, unit: "trainers", location: "Centre and Littoral", provider: "Bilingual Teachers Network (fictional)" },
+  { name: "Solar installer team", kind: "expertise", need: "power", quantity: 1, unit: "team", location: "Douala", provider: "Soleil Wouri Énergie (fictional)" },
+];

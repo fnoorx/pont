@@ -4,7 +4,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { hashPhone, last4 } from "../src/lib/privacy.ts";
 import { loadEnv } from "./env.ts";
 import { placeholderBuildingPng } from "./lib/placeholderPng.ts";
-import { PARTNERS, PROJECTS, REPORTERS, SCHOOLS, type EnrollmentBand } from "./seed-data.ts";
+import { PARTNERS, PROJECTS, REPORTERS, RESOURCES, SCHOOLS, type EnrollmentBand } from "./seed-data.ts";
 
 const BUCKET = "field-media";
 
@@ -66,6 +66,7 @@ async function wipe(client: SupabaseClient): Promise<void> {
   ok("wipe projects", await client.from("projects").delete().not("id", "is", null));
   ok("wipe attendance_reports", await client.from("attendance_reports").delete().not("id", "is", null));
   ok("wipe partners", await client.from("partners").delete().not("id", "is", null));
+  ok("wipe resources", await client.from("resources").delete().not("id", "is", null));
   ok("wipe media", await client.from("media").delete().not("id", "is", null));
   ok("wipe assessments", await client.from("assessments").delete().not("id", "is", null));
   ok("wipe schools", await client.from("schools").delete().not("id", "is", null));
@@ -111,7 +112,7 @@ async function seedPipeline(
   schoolIdByName: Map<string, string>,
   rand: () => number,
   now: number,
-): Promise<{ partners: number; projects: number; milestones: number; attendance: number; photos: number }> {
+): Promise<{ partners: number; projects: number; milestones: number; attendance: number; photos: number; resources: number }> {
   // Partners: insert, then link referrals.
   const partners = check(
     "insert partners",
@@ -225,12 +226,29 @@ async function seedPipeline(
   }
   ok("insert attendance", await client.from("attendance_reports").insert(attendanceRows));
 
+  ok(
+    "insert resources",
+    await client.from("resources").insert(
+      RESOURCES.map((r) => ({
+        name: r.name,
+        kind: r.kind,
+        need: r.need,
+        quantity: r.quantity ?? null,
+        unit: r.unit ?? null,
+        value_usd: r.valueUsd ?? null,
+        location: r.location,
+        provider: r.provider,
+      })),
+    ),
+  );
+
   return {
     partners: partners.length,
     projects: PROJECTS.length,
     milestones: milestoneCount,
     attendance: attendanceRows.length,
     photos: photoCount,
+    resources: RESOURCES.length,
   };
 }
 
@@ -339,6 +357,7 @@ async function main(): Promise<void> {
   console.log(`  partners:    ${pipeline.partners}`);
   console.log(`  projects:    ${pipeline.projects} with ${pipeline.milestones} milestones (${pipeline.photos} placeholder photos)`);
   console.log(`  attendance:  ${pipeline.attendance} weekly reports`);
+  console.log(`  resources:   ${pipeline.resources} (equipment, funding, expertise)`);
   console.log(`  demo staff:  ${staff} (email confirmed)`);
 }
 

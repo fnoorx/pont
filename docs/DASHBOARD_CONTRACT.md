@@ -443,6 +443,37 @@ Seeded attendance exists only for schools with active or finished projects. Scho
 
 Good for a headline strip, for example: "Attendance up from 64% to 82% after delivery".
 
+### `dashboard_package_costs` (one row per school with a report)
+
+What each school's package would cost. Costs are **rough estimates** per need, to be confirmed with partners: label them that way.
+
+| Column | Type | Notes |
+|---|---|---|
+| `school_id`, `school_name`, `region_code`, `region_name`, `is_sensitive` | | As in `dashboard_readiness` |
+| `tier`, `stated_need`, `recommended_need`, `package` | | As in `dashboard_readiness` |
+| `first_step_cost_usd` | number | Estimated cost of `recommended_need` |
+| `package_cost_usd` | number | Estimated cost of the whole package |
+| `priority_rank` | number | As in `dashboard_priority` (1 = help first) |
+
+### `dashboard_resources` (one row per resource, mock data)
+
+Equipment, funding and expertise PS43 could deploy, and which schools can use each one.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id`, `name`, `provider`, `location` | string | Providers are fictional |
+| `kind` | string | `equipment`, `funding`, `expertise` |
+| `need` | string? | A `top_need` value. NULL = any need (unrestricted funding) |
+| `quantity`, `unit` | number?, string? | e.g. 40 laptops |
+| `value_usd` | number? | Value of equipment, or amount of funding |
+| `schools_wanting` | number | Schools with this need anywhere in their package |
+| `schools_ready` | number | Schools where this is the first thing to fund: can use it now |
+| `schools_blocked` | number | Schools that need something else first |
+| `unlock_need` | string? | The most common first step for the blocked schools (e.g. `power`) |
+| `unlock_cost_usd` | number | Estimated cost of those first steps across the blocked schools |
+
+Good for a line like: "70 computers available: 4 schools can use them now, 2 need power first ($7,000 of solar unlocks them)."
+
 ### Suggested screens
 
 1. **Ranked needs:** a list sorted by `dashboard_priority.priority_rank`, with the four point parts and a "needs X first" badge.

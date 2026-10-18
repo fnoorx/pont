@@ -56,11 +56,19 @@ const VIEW_COLUMNS: Record<string, string[]> = {
     "school_count", "assessment_count", "verified_count", "partner_count", "proven_partner_count", "projects_planned",
     "projects_in_progress", "projects_completed", "students_reached", "attendance_before", "attendance_after",
   ],
+  dashboard_package_costs: [
+    "school_id", "school_name", "region_code", "region_name", "is_sensitive", "tier", "stated_need",
+    "recommended_need", "package", "first_step_cost_usd", "package_cost_usd", "priority_rank",
+  ],
+  dashboard_resources: [
+    "id", "name", "kind", "need", "quantity", "unit", "value_usd", "location", "provider", "schools_wanting",
+    "schools_ready", "schools_blocked", "unlock_need", "unlock_cost_usd",
+  ],
 };
 
 const RAW_TABLES = [
   "schools", "reporters", "assessments", "sessions", "media", "messages", "processed_messages", "regions",
-  "partners", "projects", "milestones", "attendance_reports",
+  "partners", "projects", "milestones", "attendance_reports", "intervention_costs", "resources",
 ];
 
 type Status = "PASS" | "FAIL" | "WARN";
