@@ -450,6 +450,7 @@ The project should expose these npm scripts:
 - `npm run simulate`: terminal chat with the engine, no browser or phone needed
 - `npm run db:push`: apply migrations to the linked project
 - `npm run functions:deploy`: deploy the `web-chat` Edge Function
+- `npm run dashboard:build`: build the Lovable dashboard into `web/dashboard/` (served by GitHub Pages at `/ps43-bridge/dashboard/`). It is a generated copy: don't edit it by hand.
 
 Lint and typecheck scripts are nice to have, not blockers.
 

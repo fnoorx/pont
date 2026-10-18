@@ -91,6 +91,18 @@ Meta's free test number only replies to 5 pre-registered phones. The engine is c
 (it already handles the SMS path, see `npm run simulate -- --sms`), so a real WhatsApp provider
 is a thin adapter in front of the same inbound processor.
 
+## Staff dashboard (live)
+
+**Live:** https://fnoorx.github.io/ps43-bridge/dashboard/ (sign in with the demo staff account,
+`DEMO_STAFF_EMAIL` / `DEMO_STAFF_PASSWORD`).
+
+The dashboard is built and edited in Lovable ([cameroon-compass](https://github.com/Firetes675/cameroon-compass)).
+To publish its latest version, run `npm run dashboard:build` (expects the repo cloned next to this
+one, or pass its path), then commit `web/` and push. The script pulls the dashboard, builds it as a
+static single-page app into `web/dashboard/` (plus `web/404.html` so deep links work), and leaves
+the dashboard repo unchanged. The live copy only changes when you rebuild, so a teammate's edit in
+Lovable can't break the demo mid-judging.
+
 ## Demo day checklist
 
 1. **Reset the data** (removes test submissions, reloads the fictional schools):
@@ -146,6 +158,7 @@ This is a hackathon prototype built on fictional data.
 | `npm run simulate` | Chat with the bot in your terminal (`-- --live` saves to Supabase, `-- --sms` for SMS) |
 | `npm run functions:deploy` | Deploy the `web-chat` Edge Function |
 | `npm run demo:reset` | Reset to the fictional demo data before judging (alias of `seed`) |
+| `npm run dashboard:build` | Build the Lovable dashboard into `web/dashboard/` for GitHub Pages |
 
 ## Layout
 
@@ -156,6 +169,7 @@ src/messaging/    inbound message types, SMS (GSM-7) helpers
 src/webhook/      inbound processor (shared by web chat and simulator) and Supabase store
 src/webchat/      web chat endpoint handler
 web/              WhatsApp-style web chat page and presentation view (static)
+web/dashboard/    built copy of the Lovable staff dashboard (generated, see npm run dashboard:build)
 supabase/functions/  Edge Function entry point (web-chat)
 scripts/          seed, verify-contract, simulate
 supabase/         config and migrations

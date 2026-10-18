@@ -17,7 +17,8 @@
     "simulate": "tsx scripts/simulate.ts",
     "db:push": "supabase db push",
     "functions:deploy": "supabase functions deploy --no-verify-jwt --use-api",
-    "demo:reset": "tsx scripts/seed.ts"
+    "demo:reset": "tsx scripts/seed.ts",
+    "dashboard:build": "bash scripts/build-dashboard.sh"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",
