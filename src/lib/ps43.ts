@@ -86,9 +86,20 @@ export function regionCentre(r: Row): [number, number] | null {
   return REGION_CENTRES[region(r).trim().toLowerCase()] ?? null;
 }
 
+/**
+ * Parses a value for display. A calendar date ("2026-10-12", from a date column) is read as that
+ * day in local time; `new Date("2026-10-12")` would be UTC midnight and show Oct 11 in Toronto.
+ * Timestamps keep their time zone.
+ */
+export function parseDisplayDate(value: string): Date {
+  const day = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  return day ? new Date(Number(day[1]), Number(day[2]) - 1, Number(day[3])) : new Date(value);
+}
+
 export function fmtDate(v: unknown) {
   if (!v) return "";
-  const d = new Date(String(v));
+  // Calendar dates ("2026-10-12") are read as local days, not UTC midnight (see parseDisplayDate).
+  const d = parseDisplayDate(String(v));
   return isNaN(d.getTime()) ? String(v) : d.toLocaleDateString(undefined, { dateStyle: "medium" });
 }
 export const label = (k: string) => k.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());

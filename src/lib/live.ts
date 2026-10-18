@@ -1,7 +1,7 @@
 // Live data from the Pont database (repo: github.com/fnoorx/ps43-bridge).
 // Read only from the dashboard_* views, plus the one write: set_assessment_verified.
 // Column names and value sets follow docs/DASHBOARD_CONTRACT.md in that repo.
-import { db } from "@/lib/ps43";
+import { db, parseDisplayDate } from "@/lib/ps43";
 
 // ---------------------------------------------------------------------------
 // Row types (one per view)
@@ -353,7 +353,7 @@ export function ago(iso: string | null | undefined, now = Date.now()): string {
 
 export function fmtDate(iso: string | null | undefined): string {
   if (!iso) return "";
-  const d = new Date(iso);
+  const d = parseDisplayDate(iso);
   return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString(undefined, { dateStyle: "medium" });
 }
 

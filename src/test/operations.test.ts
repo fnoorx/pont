@@ -52,3 +52,14 @@ describe('Resource helpers', () => {
     expect(unlockLine({ schools_blocked: 0, unlock_need: null, unlock_cost_usd: 0 })).toBeNull();
   });
 });
+
+describe('Date formatting', () => {
+  it('shows a calendar date as that day, whatever the time zone', async () => {
+    const { fmtDate } = await import('@/lib/live');
+    const { parseDisplayDate } = await import('@/lib/ps43');
+    const d = parseDisplayDate('2026-10-12');
+    expect([d.getFullYear(), d.getMonth(), d.getDate()]).toEqual([2026, 9, 12]);
+    expect(fmtDate('2026-10-12')).toContain('12');
+    expect(parseDisplayDate('2026-10-12T15:00:00Z').toISOString()).toBe('2026-10-12T15:00:00.000Z');
+  });
+});
