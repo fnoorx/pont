@@ -1,0 +1,2 @@
+// Page metadata for the operations workspace. Live data and its helpers are in src/lib/live.ts.
+export function operationsHead(title: string, description: string) {return {meta:[{title:`${title} · PS43 Foundation`},{name:'description',content:description},{property:'og:title',content:`${title} · PS43 Foundation`},{property:'og:description',content:description},{property:'og:type',content:'website'},{name:'twitter:card',content:'summary'}]};}
