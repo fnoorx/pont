@@ -109,7 +109,30 @@ describe("inbound processor", () => {
 
   it("asks for a retry, not an empty answer, while the first attempt is still running", async () => {
     await store.markProcessed(SID1); // the first attempt has started but not saved its replies yet
-    await expect(processor()(inbound(SID1))).rejects.toBeInstanceOf(ProcessingError);
+    const err = await processor()(inbound(SID1)).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ProcessingError);
+    expect((err as ProcessingError).retryable).toBe(true);
+  });
+
+  it("processes a message again when its first attempt died without replies", async () => {
+    await store.markProcessed(SID1);
+    store.processedAt.set(SID1, Date.now() - 120_000);
+    const replies = await processor()(inbound(SID1));
+    expect(replies[0]).toContain("Choose your language");
+  });
+
+  it("does not save a report twice when a later step fails", async () => {
+    await consent();
+    for (const [i, text] of ["1", "Test School", "2", "Obala", "2", "2", "3", "2", "1", "5", "0", "0", "0"].entries()) {
+      await processor()(inbound(`SM${"r".repeat(30)}${String(i).padStart(2, "0")}`, { text }));
+    }
+    store.logMessages = async () => {
+      throw new Error("log down");
+    };
+    const replies = await processor()(inbound(SID1, { text: "1" }));
+    expect(replies[0]).toContain("PS-T001");
+    expect(await processor()(inbound(SID1, { text: "1" }))).toEqual(replies);
+    expect(store.submissions).toHaveLength(1);
   });
 });
 

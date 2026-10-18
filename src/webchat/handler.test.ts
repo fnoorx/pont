@@ -65,18 +65,21 @@ describe("web chat handler", () => {
     expect((await send({ image: { dataUrl: "data:text/html;base64,PGgxPg==" } })).status).toBe(400);
   });
 
-  it("answers a failed message with a retryable 503, so the browser keeps it and sends it again", async () => {
-    const handler = createWebChatHandler({ processInbound: async () => { throw new ProcessingError("db down", ["Sorry"]); } });
-    const res = await handler(
-      new Request("http://local/web-chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clientId, messageId: nextId(), text: "hi" }),
-      }),
-    );
-    expect(res.status).toBe(503);
-    expect(((await res.json()) as { replies?: string[] }).replies).toBeUndefined();
-    expect(res.headers.get("Access-Control-Allow-Origin")).toBe("*");
+  it("never answers 200 without replies: 503 while still processing, 500 when it failed", async () => {
+    const answer = async (err: Error) => {
+      const handler = createWebChatHandler({ processInbound: async () => { throw err; } });
+      const res = await handler(
+        new Request("http://local/web-chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ clientId, messageId: nextId(), text: "hi" }),
+        }),
+      );
+      expect(res.headers.get("Access-Control-Allow-Origin")).toBe("*");
+      return res.status;
+    };
+    expect(await answer(new ProcessingError("still processing", [], true))).toBe(503);
+    expect(await answer(new ProcessingError("db down", ["Sorry"]))).toBe(500);
   });
 
   it("answers an unexpected error as JSON with CORS headers, so the browser does not mistake it for no signal", async () => {

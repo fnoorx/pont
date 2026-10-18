@@ -13,6 +13,9 @@ coverage/
 *.log
 .claude
 
+# Old generated demo materials (sandbox join card): never publish
+/demo/
+
 # Sponsor brand files (logos, brand guide): local only, not ours to publish
 /data/
 

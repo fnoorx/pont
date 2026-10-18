@@ -302,6 +302,10 @@ function handleAttendance(ctx: Ctx, input: string): Turn {
 function handleShortcut(ctx: Ctx, input: string, active: boolean): Turn | null {
   if (!ATT_SHORTCUT_START.test(input) || !isConsented(ctx)) return null;
   const inReport = active && !NON_REPORT_STEPS.has(ctx.step);
+  // In a free-text answer only the exact shortcut counts, so a note like
+  // "Attendance 40% since the roof fell" is saved as written.
+  const kind = STEP_BY_ID.get(ctx.step)?.kind;
+  if (inReport && (kind === "text" || kind === "notes") && !ATT_SHORTCUT.test(input)) return null;
   const reply = (text: string, attendance?: Attendance): Turn => {
     const turn: Turn = inReport
       ? { step: ctx.step, answers: ctx.answers, messages: [`${text}\n\n${promptFor(ctx.step, ctx)}`] }

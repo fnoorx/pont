@@ -385,6 +385,13 @@ describe("weekly attendance", () => {
     expect(chat.last?.attendance).toEqual({ present: 180, enrolled: 240 });
   });
 
+  it("saves a note that starts like the shortcut as a note", () => {
+    const chat = returning();
+    for (const text of ["hi", "1", "1", "Notes School", "2", "Obala", "2", "2", "3", "2", "1", "5", "0", "0"]) chat.send(text);
+    expect(chat.send("Attendance 40% since the roof fell")).toContain("School: Notes School");
+    expect(chat.last?.attendance).toBeUndefined();
+  });
+
   it("keeps a report in progress when the shortcut is sent mid-report", () => {
     const chat = returning();
     chat.send("hi");

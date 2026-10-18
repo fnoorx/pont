@@ -23,9 +23,20 @@ export class MemoryStore implements Store {
   /** Projects by code, for partner milestone updates. Tests add their own. */
   projects = new Map<string, { title: string; school: string; milestones: { title: string; done: boolean; photoPath?: string | null }[] }>();
 
+  /** When each message was marked, so tests can age one. */
+  processedAt = new Map<string, number>();
+
   async markProcessed(sid: string): Promise<boolean> {
     if (this.processed.has(sid)) return false;
     this.processed.add(sid);
+    this.processedAt.set(sid, Date.now());
+    return true;
+  }
+
+  async forgetIfStale(sid: string, olderThanMs: number): Promise<boolean> {
+    const at = this.processedAt.get(sid);
+    if (!this.processed.has(sid) || this.replies.has(sid) || at === undefined || Date.now() - at < olderThanMs) return false;
+    this.processed.delete(sid);
     return true;
   }
 

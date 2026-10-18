@@ -33,6 +33,8 @@ export interface Store {
   saveReplies(messageSid: string, replies: string[]): Promise<void>;
   /** Forgets a message whose processing failed, so a retry with the same id is processed again. */
   forgetMessage(messageSid: string): Promise<void>;
+  /** Forgets a message marked longer ago than this with no saved replies. Returns true if it did. */
+  forgetIfStale(messageSid: string, olderThanMs: number): Promise<boolean>;
   findOrCreateReporter(reporter: NewReporter): Promise<ReporterSnapshot>;
   loadActiveSession(reporterId: string): Promise<Session | null>;
   saveSession(reporterId: string, session: Session): Promise<void>;

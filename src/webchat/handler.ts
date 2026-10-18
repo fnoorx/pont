@@ -67,9 +67,9 @@ export function createWebChatHandler(deps: WebChatDeps): (req: Request) => Promi
       });
       return json({ replies });
     } catch (err) {
-      // Not handled (yet): a retryable status, so the browser keeps the message and sends it again
-      // with the same id, instead of showing it as delivered with no answer.
-      if (err instanceof ProcessingError) return json({ error: "Try again", retry: true }, 503);
+      // Never a 200 with no answer. Still processing: 503, the browser waits and resends the same id.
+      // Failed: 500, the browser keeps the message and shows "Tap to retry".
+      if (err instanceof ProcessingError && err.retryable) return json({ error: "Try again", retry: true }, 503);
       console.error(JSON.stringify({ message: "web chat error", error: err instanceof Error ? err.message : String(err) }));
       return json({ error: "Server error" }, 500);
     }

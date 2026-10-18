@@ -57,6 +57,18 @@ export function createSupabaseStore(db: SupabaseClient): Store {
       if (error) throw new Error(`forget message: ${error.message}`);
     },
 
+    async forgetIfStale(messageSid, olderThanMs) {
+      const { data, error } = await db
+        .from("processed_messages")
+        .delete()
+        .eq("message_sid", messageSid)
+        .is("replies", null)
+        .lt("processed_at", new Date(Date.now() - olderThanMs).toISOString())
+        .select("message_sid");
+      if (error) throw new Error(`forget stale message: ${error.message}`);
+      return (data ?? []).length > 0;
+    },
+
     async findOrCreateReporter(r) {
       const columns = "id, channel, language, role, consent_at";
       const existing = await db.from("reporters").select(columns).eq("phone_hash", r.phoneHash).maybeSingle();

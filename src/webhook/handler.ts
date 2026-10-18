@@ -62,15 +62,19 @@ function inboundLogBody(parsed: ParsedInbound): string {
 
 /**
  * A message that was not handled. A retry with the same id is processed (or answered) later.
- * `replies` is a friendly apology for channels that can only show text (SMS, the simulator);
- * the web chat answers with a retryable status instead, so the browser keeps the message.
+ * `replies` is a friendly apology for channels that can only show text (SMS, the simulator).
+ * `retryable` is true when the first attempt is still running, so the caller can simply wait;
+ * otherwise something failed, and the web chat offers "Tap to retry" instead of retrying by itself.
  */
 export class ProcessingError extends Error {
-  constructor(message: string, readonly replies: string[]) {
+  constructor(message: string, readonly replies: string[], readonly retryable = false) {
     super(message);
     this.name = "ProcessingError";
   }
 }
+
+/** A first attempt that saved no replies after this long has died (timeout or cancelled request). */
+const STALE_PROCESSING_MS = 60_000;
 
 /**
  * Handles one parsed inbound message end to end and returns the reply texts.
@@ -120,6 +124,10 @@ export function createInboundProcessor(deps: ProcessorDeps): (parsed: ParsedInbo
     try {
       fresh = await store.markProcessed(parsed.messageSid);
       if (!fresh) previous = await store.previousReplies(parsed.messageSid);
+      // No replies a minute later: the first attempt died, so process the message again.
+      if (!fresh && !previous && (await store.forgetIfStale(parsed.messageSid, STALE_PROCESSING_MS))) {
+        fresh = await store.markProcessed(parsed.messageSid);
+      }
     } catch (err) {
       fail(parsed, null, err);
     }
@@ -131,7 +139,7 @@ export function createInboundProcessor(deps: ProcessorDeps): (parsed: ParsedInbo
         return previous;
       }
       // The first attempt is still running. Ask the caller to try again shortly.
-      throw new ProcessingError("still processing", []);
+      throw new ProcessingError("still processing", [], true);
     }
 
     let language: Language | null = null;
@@ -170,21 +178,29 @@ export function createInboundProcessor(deps: ProcessorDeps): (parsed: ParsedInbo
       if (result.submission) refCode = await store.submitAssessment(reporter.id, result.submission);
       if (result.attendance) await store.submitAttendance(reporter.id, result.attendance);
       if (result.milestone) await store.reportMilestone(result.milestone);
-      await store.saveSession(reporter.id, result.nextSession);
-      if (result.reporterUpdate && Object.keys(result.reporterUpdate).length > 0) {
-        await store.updateReporter(reporter.id, result.reporterUpdate);
-      }
+      // From here a report, count or milestone may be saved. A retry would save it a second time,
+      // so later failures are only logged and the reporter still gets the replies.
+      const saved = Boolean(result.submission || result.attendance || result.milestone);
 
       const outbound = result.outboundMessages.map((m) => {
         const text = refCode ? m.text.replaceAll(REF_CODE_TOKEN, refCode) : m.text;
         return parsed.channel === "sms" ? toGsm7(text) : text;
       });
-      if (consentedBefore || result.reporterUpdate?.consentAt) {
-        const logRows: MessageLogRow[] = [
-          { reporterId: reporter.id, direction: "inbound", body: inboundLogBody(parsed) },
-          ...outbound.map((body) => ({ reporterId: reporter.id, direction: "outbound" as const, body })),
-        ];
-        await store.logMessages(logRows);
+      try {
+        await store.saveSession(reporter.id, result.nextSession);
+        if (result.reporterUpdate && Object.keys(result.reporterUpdate).length > 0) {
+          await store.updateReporter(reporter.id, result.reporterUpdate);
+        }
+        if (consentedBefore || result.reporterUpdate?.consentAt) {
+          const logRows: MessageLogRow[] = [
+            { reporterId: reporter.id, direction: "inbound", body: inboundLogBody(parsed) },
+            ...outbound.map((body) => ({ reporterId: reporter.id, direction: "outbound" as const, body })),
+          ];
+          await store.logMessages(logRows);
+        }
+      } catch (err) {
+        if (!saved) throw err;
+        log("error after saving", { messageSid: parsed.messageSid, error: err instanceof Error ? err.message : String(err) });
       }
       try {
         await store.saveReplies(parsed.messageSid, outbound);
