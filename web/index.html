@@ -119,6 +119,7 @@
   .ticks { width: 16px; height: 11px; fill: var(--muted); }
   .ticks.read { fill: var(--tick); }
   .failed { color: var(--error); font-size: 12px; margin-top: 2px; cursor: pointer; text-align: right; }
+  .failed.waiting { color: var(--muted); cursor: default; }
 
   .typing .bubble { display: inline-flex; gap: 4px; padding: 12px 14px; }
   .typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); opacity: 0.5; animation: blink 1.2s infinite; }
@@ -336,6 +337,44 @@
     Math.min(MAX_TYPING_MS, Math.max(600, 450 + text.length * 8 + (Math.random() - 0.5) * 500));
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+  // Like WhatsApp on patchy signal: if the phone can't reach the server at all, keep the message
+  // and send it by itself when the connection comes back. Gives up after 2 minutes ("Tap to retry").
+  // Server errors are not retried here. The same messageId is reused, so the server never
+  // processes a message twice.
+  const RETRY_FOR_MS = 120000;
+  const waitForSignal = () => new Promise((resolve) => {
+    const done = () => { clearTimeout(timer); window.removeEventListener("online", done); resolve(); };
+    const timer = setTimeout(done, 5000);
+    window.addEventListener("online", done);
+  });
+
+  function setWaiting(entry, on) {
+    statusEl.textContent = on ? "waiting for network…" : "online";
+    if (on) showTyping(false);
+    const note = entry?.row?.querySelector(".waiting");
+    if (on && entry?.row && !note) {
+      const el = document.createElement("div");
+      el.className = "failed waiting";
+      el.textContent = "Waiting for signal. It will send by itself.";
+      entry.row.appendChild(el);
+    } else if (!on && note) note.remove();
+  }
+
+  async function post(payload, entry) {
+    const giveUpAt = Date.now() + RETRY_FOR_MS;
+    for (;;) {
+      try {
+        const res = await fetch(API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+        setWaiting(entry, false);
+        return res;
+      } catch (err) {
+        if (Date.now() > giveUpAt) { setWaiting(entry, false); throw err; }
+        setWaiting(entry, true);
+        await waitForSignal();
+      }
+    }
+  }
+
   async function send({ text = "", display, image, location: loc, hidden = false }) {
     if (busy) return;
     busy = true;
@@ -355,7 +394,7 @@
       const payload = { clientId, messageId, text };
       if (image) payload.image = { dataUrl: image };
       if (loc) payload.location = loc;
-      const res = await fetch(API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      const res = await post(payload, entry);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       markRead(); // blue ticks first, then "typing...", like WhatsApp
