@@ -13,5 +13,3 @@ coverage/
 *.log
 .claude
 
-# Generated demo materials (contain the sandbox join code)
-demo/

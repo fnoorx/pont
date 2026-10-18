@@ -3,20 +3,6 @@
 import type { Language } from "./types.ts";
 
 export const STRINGS = {
-  // Placeholder engine (kept for tests and fallback).
-  placeholder_welcome: {
-    en: "Hello! This is Pont, from the PS43 Foundation. We are still setting up. We got your message, thank you.",
-    fr: "Bonjour ! Ici Pont, de la Fondation PS43. Nous finissons la préparation. Nous avons bien reçu votre message, merci.",
-  },
-  placeholder_media: {
-    en: "Your file was received.",
-    fr: "Votre fichier a bien été reçu.",
-  },
-  placeholder_location: {
-    en: "Your location was received.",
-    fr: "Votre position a bien été reçue.",
-  },
-
   // Hints when a reply does not fit the question.
   hint_choice: {
     en: "Please reply with a number from 1 to {max}.",

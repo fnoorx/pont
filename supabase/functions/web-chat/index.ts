@@ -1,4 +1,4 @@
-// WhatsApp-style web chat endpoint. All logic lives in src/ and is shared with the Twilio webhook.
+// WhatsApp-style web chat endpoint. All logic lives in src/ and is shared with the simulator.
 import { createClient } from "@supabase/supabase-js";
 import { engine } from "../../../src/engine/index.ts";
 import { createWebChatHandler } from "../../../src/webchat/handler.ts";

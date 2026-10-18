@@ -1,5 +1,5 @@
 // HTTP handler for the WhatsApp-style web chat (web/index.html). Judges open it from a QR code,
-// so there is no join step. It reuses the same inbound processor as the Twilio webhook:
+// so there is no join step. It uses the same inbound processor as the simulator:
 // same engine, same database, same privacy rules.
 import { z } from "zod";
 import type { ParsedInbound } from "../messaging/types.ts";

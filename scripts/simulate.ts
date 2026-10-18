@@ -1,4 +1,4 @@
-// npm run simulate: chat with the bot in your terminal. No Twilio needed.
+// npm run simulate: chat with the bot in your terminal, no browser or phone needed.
 //
 //   npm run simulate                 offline, in memory (nothing is saved)
 //   npm run simulate -- --live       saves to the linked Supabase project, so the
@@ -30,7 +30,7 @@ const phone = phoneArg >= 0 ? args[phoneArg + 1]! : "+15550009999";
 const PHOTO_URL = "https://simulator.local/photo.png";
 const VOICE_URL = "https://simulator.local/voice.ogg";
 
-// Stands in for Twilio's media server.
+// Serves the fake photo and voice note.
 const fakeFetch: typeof fetch = async (input) => {
   const url = String(input);
   if (url === PHOTO_URL) return new Response(new Uint8Array(placeholderBuildingPng(Math.floor(Math.random() * 4))));

@@ -63,7 +63,7 @@ There are two codebases. Supabase is the contract between them.
 
 | Repo | Built with | Owns |
 |---|---|---|
-| `ps43-pont` (this repo) | TypeScript, Supabase CLI | Database schema, views, seed data, conversation engine, Twilio webhook, CLI simulator |
+| `ps43-pont` (this repo) | TypeScript, Supabase CLI | Database schema, views, seed data, conversation engine, web chat, CLI simulator |
 | `ps43-pont-dashboard` | Lovable (React + Supabase) | Staff dashboard UI only |
 
 Rules:
@@ -122,21 +122,19 @@ Parts of Cameroon are conflict-affected (Northwest, Southwest, Far North), and s
 The real implementation of these can be simple (e.g. a plain SHA-256 phone hash). The point is that the behaviour is visible.
 
 ### Low cost
-Use managed free tiers (Supabase, Twilio sandbox, Lovable). No custom servers. No blockchain. No ML. Readiness logic (if built) is simple rules.
+Use managed free tiers (Supabase, GitHub Pages, Lovable). No custom servers. No blockchain. No ML. Readiness logic (if built) is simple rules.
 
 ## 6. Tech stack (this repo)
 
 - **Language:** TypeScript.
 - **Backend:** Supabase.
   - Postgres for data, Auth for dashboard login, Storage for photos.
-  - The Twilio webhook runs as a Supabase Edge Function.
+  - The `web-chat` endpoint runs as a Supabase Edge Function.
 - **Conversation engine:** plain TypeScript in `src/engine`, with no Node-only or Deno-only APIs, so the same code runs in tests, the CLI simulator, and the Edge Function.
-- **Messaging:** Twilio WhatsApp Sandbox; SMS uses the same webhook.
+- **Messaging:** the WhatsApp-style web chat (section 8). The SMS path is demoed with `npm run simulate -- --sms`. The Twilio webhook was removed (the free trial blocks it); a real WhatsApp or SMS provider would be a thin adapter in front of `createInboundProcessor`.
 - **Tooling:** Vitest for the handful of engine tests, `tsx` for scripts.
 
-Photos (if time allows): download the media from Twilio in the webhook and upload it to the `field-media` bucket. If this is fiddly, skip live photo upload and use seeded photos for the demo.
-
-Twilio signature verification is optional. Add it only if it's quick.
+Photos: the web chat sends them as data URLs, and the inbound processor uploads them to the `field-media` bucket.
 
 ## 7. Database contract
 
@@ -396,13 +394,13 @@ After submit, reply with a short thank-you and the `ref_code`.
 
 ### Web chat (judge demo)
 
-Twilio's free trial no longer lets us point the WhatsApp sandbox at our webhook, and we are not paying for anything. So judges use a **WhatsApp-style web chat** (`web/index.html`) opened from a QR code: no app, no join step, greeting in under 2 seconds. It calls the `web-chat` Edge Function, which runs the same engine and database as the Twilio webhook. Web reporters have no phone number: they are identified by a salted hash of a random browser id, and `phone_e164` / `phone_last4` are NULL. Numbered options are shown as tappable buttons.
+Twilio's free trial no longer lets us point the WhatsApp sandbox at our webhook, and we are not paying for anything. So judges use a **WhatsApp-style web chat** (`web/index.html`) opened from a QR code: no app, no join step, greeting in under 2 seconds. It calls the `web-chat` Edge Function, which runs the conversation engine against the real database. Web reporters have no phone number: they are identified by a salted hash of a random browser id, and `phone_e164` / `phone_last4` are NULL. Numbered options are shown as tappable buttons.
 
 ## 9. Architecture (keep it light)
 
 - **The engine is a function:** `(session, inboundMessage) => { nextSession, replies }`. Keeping it free of I/O makes it easy to test and to run in the CLI simulator.
 - **The flow is a config array of steps** (prompt per language, options, next step). Don't build a generic workflow framework.
-- **The webhook does the basics:** load the session, run the engine, save, reply via TwiML.
+- **The inbound processor does the basics:** load the session, run the engine, save, return the replies. The web chat Edge Function and the simulator both call it.
 
 ## 10. Seed and demo data
 
@@ -424,9 +422,9 @@ The project should expose these npm scripts:
 
 - `npm run test`: engine tests
 - `npm run seed`: reset and seed demo data
-- `npm run simulate`: terminal chat with the engine, no Twilio needed
+- `npm run simulate`: terminal chat with the engine, no browser or phone needed
 - `npm run db:push`: apply migrations to the linked project
-- `npm run functions:deploy`: deploy the webhook
+- `npm run functions:deploy`: deploy the `web-chat` Edge Function
 
 Lint and typecheck scripts are nice to have, not blockers.
 

@@ -4,7 +4,7 @@ Pont (French for "bridge") helps the PS43 Foundation find and respond to school 
 Field partners report a school's needs over WhatsApp or SMS. PS43 staff see them on a dashboard.
 
 This repo owns the database (schema, views, security, seed data), the conversation engine,
-the Twilio webhook and a terminal simulator. The staff dashboard is a separate Lovable project that reads from
+the web chat backend and a terminal simulator. The staff dashboard is a separate Lovable project that reads from
 this database. See [AGENTS.md](AGENTS.md) for the full design and rules, and
 [docs/DASHBOARD_CONTRACT.md](docs/DASHBOARD_CONTRACT.md) for what the dashboard can use.
 
@@ -58,45 +58,21 @@ You need Node 20.12 or newer and the [Supabase CLI](https://supabase.com/docs/gu
    "Allow new users to sign up". Otherwise anyone with the anon key could create an account
    and read the dashboard views. The verify script warns if this is still on.
 
-## WhatsApp setup (Twilio sandbox)
-
-The bot runs as the `twilio-webhook` Supabase Edge Function. WhatsApp and SMS share it.
-
-1. In Twilio, open Messaging > Try it out > Send a WhatsApp message. Note the sandbox number
-   and join code. Add `TWILIO_ACCOUNT_SID` and `TWILIO_AUTH_TOKEN` to `.env`.
-
-2. Set the function secrets (Supabase provides its own URL and service role key automatically).
+8. Deploy the web chat Edge Function. Supabase provides its own URL and service role key;
    `PHONE_HASH_SALT` must be the same value as in `.env`:
 
    ```sh
-   supabase secrets set TWILIO_ACCOUNT_SID=... TWILIO_AUTH_TOKEN=... PHONE_HASH_SALT=... \
-     PUBLIC_WEBHOOK_URL=https://<project-ref>.supabase.co/functions/v1/twilio-webhook
-   ```
-
-3. Deploy:
-
-   ```sh
+   supabase secrets set PHONE_HASH_SALT=...
    npm run functions:deploy
    ```
 
-4. In the Twilio sandbox settings, set "When a message comes in" to the `PUBLIC_WEBHOOK_URL`
-   above, method `POST`, and save.
-
-5. From your phone, send the join code (for example `join purple-tiger`) to the sandbox number,
-   then send any message. You should get a reply.
-
-Notes:
-- Requests are checked against the Twilio signature, so the URL in Twilio must exactly match
-  `PUBLIC_WEBHOOK_URL`.
-- Sandbox participants must rejoin after 3 days of inactivity.
-- On a Twilio trial, SMS replies only reach phone numbers verified in your Twilio console.
-- Logs: Supabase dashboard > Edge Functions > twilio-webhook > Logs.
+   Logs: Supabase dashboard > Edge Functions > web-chat > Logs.
 
 ## Web chat (what judges use)
 
 `web/index.html` is a WhatsApp-style chat page. Judges scan a QR code and the bot greets them
 in under 2 seconds, with no app, sign-up or join code. It talks to the `web-chat` Edge Function,
-which runs the same engine and database as the WhatsApp webhook, so reports appear on the
+which runs the conversation engine against the real database, so reports appear on the
 dashboard live. Numbered answers become tappable buttons, and the + button sends a photo or
 location.
 
@@ -108,20 +84,19 @@ inside a black iPhone frame, with a QR code so judges can try it. On a laptop, t
 this view automatically (phones get the plain chat; add `?plain` to force the plain chat). Click
 the phone to drive the chat; "Restart chat" starts fresh and **P** hides the side panel. The chat
 is always light mode (add `?theme=dark` to the chat link for dark).
-Set `WEB_CHAT_URL` in `.env` to its public address, then `npm run demo:card` makes a QR for it.
 To try it locally: `cd web && python3 -m http.server 8765` and open http://localhost:8765.
 
 Why not real WhatsApp for judges? Twilio's free trial blocks setting the sandbox webhook, and
-Meta's free test number only replies to 5 pre-registered phones. The real WhatsApp webhook
-(`twilio-webhook`) is still built and works on a paid or classic Twilio sandbox.
+Meta's free test number only replies to 5 pre-registered phones. The engine is channel-agnostic
+(it already handles the SMS path, see `npm run simulate -- --sms`), so a real WhatsApp provider
+is a thin adapter in front of the same inbound processor.
 
 ## Demo day checklist
 
 1. **Reset the data** (removes test submissions, reloads the fictional schools):
    `npm run demo:reset` (same as `npm run seed`)
-2. **Print or show the join card.** Set `WEB_CHAT_URL` in `.env`, run `npm run demo:card`, and
-   open `demo/join-card.html`. The QR opens the web chat directly.
-3. **Warm up the webhook** a minute before judging, so the first judge does not wait for a
+2. **Open the presentation view** (link above). Its QR code opens the web chat directly.
+3. **Warm up the Edge Function** a minute before judging, so the first judge does not wait for a
    cold start (about 2 seconds). Any request wakes it; this one is rejected harmlessly:
    `curl -s -o /dev/null -X POST https://<project-ref>.supabase.co/functions/v1/web-chat`
 4. **Check the dashboard is logged in** and refreshing (it polls every few seconds).
@@ -138,7 +113,7 @@ This is a hackathon prototype built on fictional data.
 
 | Pipeline stage | In this prototype |
 |---|---|
-| Report | Real: WhatsApp/SMS bot, saved to Supabase, shown on the dashboard |
+| Report | Real: WhatsApp-style chat bot (SMS path in the simulator), saved to Supabase, shown on the dashboard |
 | Assess | Real rules: `dashboard_readiness` scores every school live (Tier 0/1/2) |
 | Match | Real rules on mock partners: `dashboard_partner_matches` |
 | Deliver | Mock projects and photo milestones |
@@ -150,13 +125,13 @@ This is a hackathon prototype built on fictional data.
 - **Project management:** staff create projects, assign partners and approve milestone photos from the dashboard.
 - **Attendance by SMS:** a short weekly SMS flow for headteachers to report attendance counts.
 - **School matching:** recognise when two reports are about the same school, instead of creating a new school each time.
-- **WhatsApp Business API:** a dedicated, verified number instead of the Twilio sandbox (no join code, no 3-day rejoin).
+- **WhatsApp Business API and SMS:** a dedicated, verified WhatsApp number plus an SMS gateway, both feeding the same engine as the web chat.
 - **Message templates:** approved WhatsApp templates so PS43 can message reporters first (reminders, follow-ups).
 - **Voice notes:** transcription and translation of voice notes for staff.
 - **Media moderation:** check photos before staff see them, and enforce "building only, no people".
 - **Data retention:** automatic deletion of raw phone numbers and old sessions, plus a way for reporters to ask for deletion.
 - **Stronger privacy:** per-partner access rules, an audit trail of staff actions, and a reviewed list of sensitive regions.
-- **Operations:** monitoring and alerts on the webhook, retries for failed media downloads, and backups.
+- **Operations:** monitoring and alerts on the Edge Function, retries for failed media downloads, and backups.
 - **Offline field tools:** printed QR posters and USSD for areas with no data at all.
 
 ## Commands
@@ -170,20 +145,19 @@ This is a hackathon prototype built on fictional data.
 | `npm run verify` | Same as `npx tsx scripts/verify-contract.ts` |
 | `npm run db:push` | Apply migrations to the linked project |
 | `npm run simulate` | Chat with the bot in your terminal (`-- --live` saves to Supabase, `-- --sms` for SMS) |
-| `npm run functions:deploy` | Deploy the Edge Functions (`twilio-webhook` and `web-chat`) |
+| `npm run functions:deploy` | Deploy the `web-chat` Edge Function |
 | `npm run demo:reset` | Reset to the fictional demo data before judging (alias of `seed`) |
-| `npm run demo:card` | Build the printable judge join card with QR code (`demo/join-card.html`) |
 
 ## Layout
 
 ```
 src/lib/          privacy utilities (phone hashing, coordinate rounding)
 src/engine/       conversation engine: flow config, bilingual strings, parsing
-src/messaging/    Twilio parsing, TwiML replies, signature check
-src/webhook/      webhook handler and Supabase store
+src/messaging/    inbound message types, SMS (GSM-7) helpers
+src/webhook/      inbound processor (shared by web chat and simulator) and Supabase store
 src/webchat/      web chat endpoint handler
-web/              WhatsApp-style web chat page (static, one file)
-supabase/functions/  Edge Function entry points (twilio-webhook, web-chat)
+web/              WhatsApp-style web chat page and presentation view (static)
+supabase/functions/  Edge Function entry point (web-chat)
 scripts/          seed, verify-contract, simulate
 supabase/         config and migrations
 docs/             dashboard contract

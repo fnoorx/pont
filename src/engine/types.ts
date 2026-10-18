@@ -1,5 +1,4 @@
-// The engine contract. The webhook (and later the simulator) is built against these types,
-// so the placeholder engine can be swapped for the real one without touching the handler.
+// The engine contract. The inbound processor and the simulator are built against these types.
 // Pure data only: no I/O, no Node-only or Deno-only types.
 
 export type Channel = "whatsapp" | "sms" | "web";

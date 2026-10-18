@@ -414,11 +414,6 @@ enabled = true
 # and column/key alignment. Set to "null" to emit raw, unformatted SQL.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":180,\"commaStyle\":\"trailing\"}"
 
-# Twilio calls this function directly and cannot send a Supabase JWT.
-# Requests are authenticated by the Twilio signature check instead.
-[functions.twilio-webhook]
-verify_jwt = false
-
 # Public WhatsApp-style web chat for judges. No Supabase JWT: anyone with the page can chat.
 [functions.web-chat]
 verify_jwt = false

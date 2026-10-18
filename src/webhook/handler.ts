@@ -1,7 +1,6 @@
-// The thin webhook handler (AGENTS.md section 9), written against web-standard
-// Request/Response so it runs in the Edge Function (Deno) and in Vitest (Node).
-// Order: verify signature, idempotency, reporter, session, media, engine, persist, reply.
-// The part after signature checking is `createInboundProcessor`, which the simulator reuses.
+// Handles one inbound message (AGENTS.md section 9). Shared by the web chat Edge Function and
+// the simulator, so it runs in Deno and Node alike.
+// Order: idempotency, reporter, session, media, engine, persist, reply.
 import { bilingual, t } from "../engine/strings.ts";
 import {
   REF_CODE_TOKEN,
@@ -14,8 +13,7 @@ import {
 } from "../engine/types.ts";
 import { hashPhone, hashWebClient, last4 } from "../lib/privacy.ts";
 import { toGsm7 } from "../messaging/sms.ts";
-import { verifyTwilioSignature } from "../messaging/twilioSignature.ts";
-import type { MessagingProvider, ParsedInbound, ProviderMedia } from "../messaging/types.ts";
+import type { ParsedInbound, ProviderMedia } from "../messaging/types.ts";
 import type { MessageLogRow, Store } from "./store.ts";
 
 const MAX_MEDIA_BYTES = 16 * 1024 * 1024;
@@ -38,26 +36,6 @@ export interface ProcessorDeps {
   store: Store;
   engine: Engine;
   phoneHashSalt: string;
-  /** Authorization header for downloading provider media (Twilio uses Basic auth). */
-  mediaAuthHeader?: string;
-  fetchImpl?: typeof fetch;
-  now?: () => Date;
-  log?: Log;
-}
-
-export interface WebhookConfig {
-  twilioAccountSid: string;
-  twilioAuthToken: string;
-  /** The exact public URL Twilio calls. Signatures are computed over it. */
-  publicUrl: string;
-  phoneHashSalt: string;
-}
-
-export interface WebhookDeps {
-  config: WebhookConfig;
-  store: Store;
-  engine: Engine;
-  provider: MessagingProvider;
   fetchImpl?: typeof fetch;
   now?: () => Date;
   log?: Log;
@@ -101,15 +79,14 @@ export function createInboundProcessor(deps: ProcessorDeps): (parsed: ParsedInbo
         log("media skipped: unsupported type", { messageSid, contentType: baseType });
         continue;
       }
-      const headers: Record<string, string> = deps.mediaAuthHeader ? { Authorization: deps.mediaAuthHeader } : {};
-      const res = await fetchImpl(m.url, { headers });
+      const res = await fetchImpl(m.url);
       if (!res.ok) throw new Error(`media download failed: HTTP ${res.status}`);
       const bytes = new Uint8Array(await res.arrayBuffer());
       if (bytes.byteLength > MAX_MEDIA_BYTES) {
         log("media skipped: too large", { messageSid, bytes: bytes.byteLength });
         continue;
       }
-      // Pending until linked to an assessment on submit. Provider URLs are never stored.
+      // Pending until linked to an assessment on submit. Source URLs are never stored.
       const storagePath = `pending/${reporterId}/${messageSid}-${i}.${ext}`;
       await store.uploadMedia(storagePath, bytes, baseType);
       stored.push({ type, storagePath, contentType: baseType });
@@ -175,44 +152,5 @@ export function createInboundProcessor(deps: ProcessorDeps): (parsed: ParsedInbo
       const error = language ? t("error_generic", language) : bilingual("error_generic");
       return [parsed.channel === "sms" ? toGsm7(error) : error];
     }
-  };
-}
-
-export function createWebhookHandler(deps: WebhookDeps): (req: Request) => Promise<Response> {
-  const { config, provider } = deps;
-  const log = deps.log ?? defaultLog;
-  const processInbound = createInboundProcessor({
-    store: deps.store,
-    engine: deps.engine,
-    phoneHashSalt: config.phoneHashSalt,
-    mediaAuthHeader: `Basic ${btoa(`${config.twilioAccountSid}:${config.twilioAuthToken}`)}`,
-    ...(deps.fetchImpl ? { fetchImpl: deps.fetchImpl } : {}),
-    ...(deps.now ? { now: deps.now } : {}),
-    log,
-  });
-
-  const reply = (messages: string[]): Response => {
-    const { body, contentType } = provider.buildReply(messages);
-    return new Response(body, { status: 200, headers: { "Content-Type": contentType } });
-  };
-
-  return async (req: Request): Promise<Response> => {
-    if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
-
-    const params = Object.fromEntries(new URLSearchParams(await req.text()));
-    const signature = req.headers.get("X-Twilio-Signature");
-    if (!(await verifyTwilioSignature(config.twilioAuthToken, config.publicUrl, params, signature))) {
-      log("rejected: bad signature");
-      return new Response("Forbidden", { status: 403 });
-    }
-
-    const parsed = provider.parseInbound(params);
-    if (!parsed) {
-      // Not an inbound message we handle (e.g. a status callback). 200 so Twilio does not retry.
-      log("ignored: not an inbound message");
-      return reply([]);
-    }
-
-    return reply(await processInbound(parsed));
   };
 }
