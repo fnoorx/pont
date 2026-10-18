@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { useQueries, useQueryClient } from '@tanstack/react-query';
-import { db } from '@/lib/ps43';
+import { db, ensureSession } from '@/lib/ps43';
 import {
   fetchView, setMilestoneVerified, setVerified, REFRESH_MS,
   type Assessment, type Attendance, type ImpactSummary, type Match, type Media, type Milestone,
@@ -42,9 +42,9 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    db().auth.getSession().then(({ data }) => {
-      setSession(data.session ? 'signed-in' : 'signed-out');
-      setEmail(data.session?.user.email ?? '');
+    ensureSession().then((s) => {
+      setSession(s ? 'signed-in' : 'signed-out');
+      setEmail(s?.user.email ?? '');
     });
     const { data: sub } = db().auth.onAuthStateChange((_event, s) => {
       setSession(s ? 'signed-in' : 'signed-out');

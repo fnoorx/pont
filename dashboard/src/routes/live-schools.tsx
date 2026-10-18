@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Fragment, lazy, Suspense, useEffect, useMemo, useState } from "react";
 import {
-  db, type Row, schoolId, schoolName, region, condition, topNeed,
+  db, ensureSession, type Row, schoolId, schoolName, region, condition, topNeed,
   str, num, pick, fmtDate, label,
 } from "@/lib/ps43";
 
@@ -37,9 +37,9 @@ function Dashboard() {
   const [email, setEmail] = useState("");
 
   useEffect(() => {
-    db().auth.getUser().then(({ data }) => {
-      if (!data.user) nav({ to: "/auth", replace: true });
-      else { setEmail(data.user.email ?? ""); setReady(true); }
+    ensureSession().then((s) => {
+      if (!s) nav({ to: "/auth", replace: true });
+      else { setEmail(s.user.email ?? ""); setReady(true); }
     });
     const { data: sub } = db().auth.onAuthStateChange((ev) => {
       if (ev === "SIGNED_OUT") nav({ to: "/auth", replace: true });

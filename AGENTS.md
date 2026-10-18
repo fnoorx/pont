@@ -127,7 +127,7 @@ Parts of Cameroon are conflict-affected (Northwest, Southwest, Far North), and s
   - Schools in sensitive regions show no pin, only region-level counts.
 - **Phone numbers:** The dashboard shows reporter role + last 4 digits only.
 - **Access:**
-  - The dashboard requires a login.
+  - The database views only answer signed-in users. The published demo dashboard signs in with the demo staff account (built in from `.env` by `npm run dashboard:build`), so judges skip the sign-in screen; a real pilot would give each staff member their own login.
   - The service role key stays out of the dashboard and out of git.
 
 The real implementation of these can be simple (e.g. a plain SHA-256 phone hash). The point is that the behaviour is visible.

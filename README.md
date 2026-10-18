@@ -8,7 +8,7 @@ Team #30, PS43 Foundation challenge. A hackathon prototype on fictional data.
 
 ## Try it
 
-- **Staff dashboard:** https://fnoorx.github.io/ps43-bridge/dashboard/ (needs the demo staff login, provided with the submission)
+- **Staff dashboard:** https://fnoorx.github.io/ps43-bridge/dashboard/ (opens straight in: the published demo signs in with a demo staff account)
 - **Report a school (the chat):** https://fnoorx.github.io/ps43-bridge/ (no app or sign-up; on a laptop it opens a phone view with a QR code). Also linked from every dashboard page.
 
 Send a report in the chat and it appears on the dashboard within 10 seconds.

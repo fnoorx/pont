@@ -1,4 +1,4 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createClient, type Session, type SupabaseClient } from "@supabase/supabase-js";
 
 /**
  * Database connection.
@@ -29,6 +29,22 @@ export function db(): SupabaseClient {
     });
   }
   return client;
+}
+
+/**
+ * Demo staff login, set at build time by scripts/build-dashboard.sh, so visitors skip the sign-in
+ * screen. The data is fictional; the database views still only answer signed-in users.
+ */
+const DEMO_EMAIL: string | undefined = import.meta.env["VITE_DEMO_EMAIL"] || undefined;
+const DEMO_PASSWORD: string | undefined = import.meta.env["VITE_DEMO_PASSWORD"] || undefined;
+export const hasDemoLogin = Boolean(DEMO_EMAIL && DEMO_PASSWORD);
+
+/** The current session. With a demo login and no session, signs in with the demo account. */
+export async function ensureSession(): Promise<Session | null> {
+  const { data } = await db().auth.getSession();
+  if (data.session || !DEMO_EMAIL || !DEMO_PASSWORD) return data.session;
+  const res = await db().auth.signInWithPassword({ email: DEMO_EMAIL, password: DEMO_PASSWORD });
+  return res.data.session ?? null;
 }
 
 export type Row = Record<string, unknown>;

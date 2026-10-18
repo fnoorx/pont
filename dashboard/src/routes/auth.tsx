@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { db } from "@/lib/ps43";
+import { db, ensureSession, hasDemoLogin } from "@/lib/ps43";
 import { CHAT_URL } from "@/lib/live";
 import { Button } from "@/components/ui/button";
 import symbol from "@/assets/ps43-logo.png";
@@ -43,6 +43,15 @@ function Login() {
     nav({ to: "/dashboard", replace: true });
   }
 
+  async function openDemo() {
+    setBusy(true);
+    setErr("");
+    const session = await ensureSession();
+    setBusy(false);
+    if (!session) return setErr("Could not open the demo. Sign in below.");
+    nav({ to: "/dashboard", replace: true });
+  }
+
   return (
     <main className="relative flex min-h-screen items-center justify-center bg-background px-4 font-sans">
       <ThemeToggle className="absolute right-4 top-4" />
@@ -55,6 +64,12 @@ function Login() {
           <p className="text-xs font-semibold uppercase tracking-widest text-primary">PS43 Foundation</p>
           <h1 className="mt-2 font-display text-3xl text-info">Staff dashboard</h1>
           <p className="mt-1 text-sm text-muted-foreground">Sign in with your staff account.</p>
+          {hasDemoLogin && (
+            <Button type="button" disabled={busy} onClick={openDemo}
+              className="mt-6 w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
+              Open the demo dashboard (no sign-in needed)
+            </Button>
+          )}
           <label className="mt-6 block text-sm font-medium">Email</label>
           <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
             className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-2 focus:outline-primary" />
