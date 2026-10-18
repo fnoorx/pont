@@ -4,7 +4,7 @@ import { db } from '@/lib/ps43';
 import {
   fetchView, setVerified, REFRESH_MS,
   type Assessment, type Attendance, type ImpactSummary, type Match, type Media, type Milestone,
-  type Partner, type Priority, type Project, type Readiness, type RegionStat, type School,
+  type PackageCost, type Partner, type Priority, type Project, type Readiness, type RegionStat, type Resource, type School,
 } from '@/lib/live';
 
 // Live data for every operations page. Reads only the dashboard_* views from the Pont
@@ -13,6 +13,7 @@ type Data = {
   schools: School[]; assessments: Assessment[]; regions: RegionStat[]; media: Media[];
   readiness: Readiness[]; priority: Priority[]; partners: Partner[]; matches: Match[];
   projects: Project[]; milestones: Milestone[]; attendance: Attendance[]; impact: ImpactSummary | null;
+  resources: Resource[]; packages: PackageCost[];
 };
 type State = Data & {
   session: 'checking' | 'signed-in' | 'signed-out'; email: string;
@@ -26,6 +27,7 @@ const VIEWS = [
   ['media', 'dashboard_media'], ['readiness', 'dashboard_readiness'], ['priority', 'dashboard_priority'],
   ['partners', 'dashboard_partners'], ['matches', 'dashboard_partner_matches'], ['projects', 'dashboard_projects'],
   ['milestones', 'dashboard_milestones'], ['attendance', 'dashboard_attendance'], ['impact', 'dashboard_impact_summary'],
+  ['resources', 'dashboard_resources'], ['packages', 'dashboard_package_costs'],
 ] as const;
 
 const Context = createContext<State | null>(null);
@@ -77,6 +79,8 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
     milestones: [...(data.milestones as Milestone[])].sort((a, b) => a.sort_order - b.sort_order),
     attendance: data.attendance as Attendance[],
     impact: ((data.impact as ImpactSummary[])[0] ?? null),
+    resources: data.resources as Resource[],
+    packages: [...(data.packages as PackageCost[])].sort((a, b) => (a.priority_rank ?? 999) - (b.priority_rank ?? 999)),
     session, email,
     loading: session === 'signed-in' && results.some((r) => r.isLoading),
     error: firstError instanceof Error ? firstError.message : '',

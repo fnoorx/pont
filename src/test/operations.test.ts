@@ -41,3 +41,14 @@ describe('Live data helpers', () => {
     expect(ago('2026-10-15T12:00:00Z', now)).toBe('2 days ago');
   });
 });
+
+describe('Resource helpers', () => {
+  it('formats dollars and explains what unlocks blocked schools', async () => {
+    const { usd, unlockLine } = await import('@/lib/live');
+    expect(usd(7000)).toBe('$7,000');
+    expect(usd(null)).toBe('n/a');
+    expect(unlockLine({ schools_blocked: 2, unlock_need: 'power', unlock_cost_usd: 7000 })).toBe('2 schools need power first · about $7,000 unlocks them');
+    expect(unlockLine({ schools_blocked: 1, unlock_need: 'building', unlock_cost_usd: 8000 })).toBe('1 school needs building repairs first · about $8,000 unlocks it');
+    expect(unlockLine({ schools_blocked: 0, unlock_need: null, unlock_cost_usd: 0 })).toBeNull();
+  });
+});

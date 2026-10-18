@@ -191,6 +191,43 @@ export interface Attendance {
   attendance_rate: number;
 }
 
+/** One row per assessed school. Costs are rough estimates per need, to confirm with partners. */
+export interface PackageCost {
+  school_id: string;
+  school_name: string;
+  region_code: string;
+  region_name: string;
+  is_sensitive: boolean;
+  tier: Tier;
+  stated_need: string;
+  recommended_need: string;
+  package: string[];
+  first_step_cost_usd: number | null;
+  package_cost_usd: number;
+  priority_rank: number | null;
+}
+
+export type ResourceKind = "equipment" | "funding" | "expertise";
+
+/** Equipment, funding or expertise PS43 could deploy (fictional demo data). */
+export interface Resource {
+  id: string;
+  name: string;
+  kind: ResourceKind;
+  /** NULL = any need (unrestricted funding). */
+  need: string | null;
+  quantity: number | null;
+  unit: string | null;
+  value_usd: number | null;
+  location: string | null;
+  provider: string;
+  schools_wanting: number;
+  schools_ready: number;
+  schools_blocked: number;
+  unlock_need: string | null;
+  unlock_cost_usd: number;
+}
+
 export interface ImpactSummary {
   school_count: number;
   assessment_count: number;
@@ -240,6 +277,7 @@ const LABELS: Record<string, Record<string, string>> = {
   milestone_status: { pending: "Pending", done: "Done" },
   blocked_by: { building: "a safe building", power: "power", devices: "devices", signal: "mobile signal (or satellite)" },
   tier: { tier0: "Tier 0 · Foundations", tier1: "Tier 1 · Offline digital", tier2: "Tier 2 · Connected" },
+  resource_kind: { equipment: "Equipment", funding: "Funding", expertise: "Expertise" },
 };
 
 export type LabelSet = keyof typeof LABELS;
@@ -263,6 +301,20 @@ export const TIER_ADVICE: Record<Tier, string> = {
 export function blockedBadge(r: Pick<Readiness, "stated_need" | "blocked_by">): string | null {
   if (!r.blocked_by) return null;
   return `Asked for ${label("need", r.stated_need).toLowerCase()} · needs ${label("blocked_by", r.blocked_by)} first`;
+}
+
+/** Whole US dollars, e.g. 7000 -> "$7,000". */
+export function usd(n: number | null | undefined): string {
+  return n == null ? "n/a" : `$${Math.round(n).toLocaleString("en-US")}`;
+}
+
+/** "2 schools need power first · about $7,000 unlocks them", or null when nothing is blocked. */
+export function unlockLine(r: Pick<Resource, "schools_blocked" | "unlock_need" | "unlock_cost_usd">): string | null {
+  if (!r.schools_blocked) return null;
+  const schools = `${r.schools_blocked} school${r.schools_blocked === 1 ? "" : "s"}`;
+  const first = r.unlock_need ? label("need", r.unlock_need).toLowerCase() : "something else";
+  const one = r.schools_blocked === 1;
+  return `${schools} ${one ? "needs" : "need"} ${first} first · about ${usd(r.unlock_cost_usd)} unlocks ${one ? "it" : "them"}`;
 }
 
 /** Percent with no decimals, e.g. 0.817 -> "82%". */
