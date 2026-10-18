@@ -18,6 +18,7 @@
     "db:push": "supabase db push",
     "functions:deploy": "supabase functions deploy --no-verify-jwt --use-api",
     "demo:reset": "tsx scripts/seed.ts",
+    "dashboard:sync": "git subtree pull --prefix=dashboard https://github.com/Firetes675/cameroon-compass.git main -m \"Sync the staff dashboard from cameroon-compass\"",
     "dashboard:build": "bash scripts/build-dashboard.sh"
   },
   "dependencies": {

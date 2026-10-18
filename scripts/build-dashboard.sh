@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Builds the Lovable dashboard (cameroon-compass) as a static single-page app into web/dashboard,
-# so GitHub Pages serves it at https://fnoorx.github.io/ps43-bridge/dashboard/ next to the web chat.
-# The dashboard repo is not changed: the Pages config is a temporary file, removed after the build.
+# Builds the staff dashboard (dashboard/, synced from the Lovable repo cameroon-compass) as a static
+# single-page app into web/dashboard, so GitHub Pages serves it at https://fnoorx.github.io/ps43-bridge/dashboard/
+# next to the web chat. Run `npm run dashboard:sync` first to pick up the latest Lovable edits.
+# The dashboard source is not changed: the Pages config is a temporary file, removed after the build.
 set -euo pipefail
 
 here="$(cd "$(dirname "$0")/.." && pwd)"
-dash="$(cd "${1:-$here/../cameroon-compass}" && pwd)"
+dash="$(cd "${1:-$here/dashboard}" && pwd)"
 out="$here/web/dashboard"
 
 cd "$dash"
-git pull --ff-only
 [ -d node_modules ] || npm install --no-save --package-lock=false
 
 cat > vite.pages.config.ts <<'EOF'

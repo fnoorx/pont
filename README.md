@@ -4,8 +4,8 @@ Pont (French for "bridge") helps the PS43 Foundation find and respond to school 
 Field partners report a school's needs over WhatsApp or SMS. PS43 staff see them on a dashboard.
 
 This repo owns the database (schema, views, security, seed data), the conversation engine,
-the web chat backend and a terminal simulator. The staff dashboard is a separate Lovable project that reads from
-this database. See [AGENTS.md](AGENTS.md) for the full design and rules, and
+the web chat backend, a terminal simulator and, in [dashboard/](dashboard/), the staff dashboard
+(React, built in Lovable) that reads from this database. See [AGENTS.md](AGENTS.md) for the full design and rules, and
 [docs/DASHBOARD_CONTRACT.md](docs/DASHBOARD_CONTRACT.md) for what the dashboard can use.
 
 ## Setup
@@ -96,11 +96,14 @@ is a thin adapter in front of the same inbound processor.
 **Live:** https://fnoorx.github.io/ps43-bridge/dashboard/ (sign in with the demo staff account,
 `DEMO_STAFF_EMAIL` / `DEMO_STAFF_PASSWORD`).
 
-The dashboard is built and edited in Lovable ([cameroon-compass](https://github.com/Firetes675/cameroon-compass)).
-To publish its latest version, run `npm run dashboard:build` (expects the repo cloned next to this
-one, or pass its path), then commit `web/` and push. The script pulls the dashboard, builds it as a
-static single-page app into `web/dashboard/` (plus `web/404.html` so deep links work), and leaves
-the dashboard repo unchanged. The live copy only changes when you rebuild, so a teammate's edit in
+The dashboard source is in [dashboard/](dashboard/). It is built and edited in Lovable, which syncs
+with [cameroon-compass](https://github.com/Firetes675/cameroon-compass); `dashboard/` is a copy of that
+repo with its full history. To publish the latest version:
+
+1. `npm run dashboard:sync` pulls the newest Lovable commits into `dashboard/`.
+2. `npm run dashboard:build` builds it as a static single-page app into `web/dashboard/` (plus
+   `web/404.html` so deep links work).
+3. Commit and push. The live copy only changes when you rebuild, so a teammate's edit in
 Lovable can't break the demo mid-judging.
 
 ## Demo day checklist
@@ -158,7 +161,8 @@ This is a hackathon prototype built on fictional data.
 | `npm run simulate` | Chat with the bot in your terminal (`-- --live` saves to Supabase, `-- --sms` for SMS) |
 | `npm run functions:deploy` | Deploy the `web-chat` Edge Function |
 | `npm run demo:reset` | Reset to the fictional demo data before judging (alias of `seed`) |
-| `npm run dashboard:build` | Build the Lovable dashboard into `web/dashboard/` for GitHub Pages |
+| `npm run dashboard:sync` | Pull the latest Lovable dashboard commits into `dashboard/` |
+| `npm run dashboard:build` | Build `dashboard/` into `web/dashboard/` for GitHub Pages |
 
 ## Layout
 
@@ -169,7 +173,8 @@ src/messaging/    inbound message types, SMS (GSM-7) helpers
 src/webhook/      inbound processor (shared by web chat and simulator) and Supabase store
 src/webchat/      web chat endpoint handler
 web/              WhatsApp-style web chat page and presentation view (static)
-web/dashboard/    built copy of the Lovable staff dashboard (generated, see npm run dashboard:build)
+dashboard/        staff dashboard source (React + Supabase, built in Lovable, synced from cameroon-compass)
+web/dashboard/    built copy of the staff dashboard (generated, see npm run dashboard:build)
 supabase/functions/  Edge Function entry point (web-chat)
 scripts/          seed, verify-contract, simulate
 supabase/         config and migrations
