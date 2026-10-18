@@ -27,15 +27,16 @@ function ProjectCard({p,open}:{p:Project;open:()=>void}){
 
 function ProjectDetail({project:p,onClose}:{project:Project;onClose:()=>void}){
  const {milestones,verifyMilestone}=useOperations();
- const [busy,setBusy]=useState('');
+ const [busy,setBusy]=useState('');const [error,setError]=useState('');
  const steps=milestones.filter(m=>m.project_id===p.id);
- async function confirm(id:string){setBusy(id);try{await verifyMilestone(id);}finally{setBusy('');}}
+ async function confirm(id:string){setBusy(id);setError('');try{await verifyMilestone(id);}catch(e){setError(e instanceof Error?`Could not confirm this milestone: ${e.message}`:'Could not confirm this milestone. Try again.');}finally{setBusy('');}}
  const photos=steps.map(m=>m.photo_path).filter((x):x is string=>Boolean(x));
  return <Drawer title={p.title} kicker={`PROJECT · ${label('project_status',p.status).toUpperCase()}`} onClose={onClose}>
   <p className="mt-2 text-xs text-muted-foreground">{p.school_name} · {p.region_name}</p>
   <div className="mt-3 flex flex-wrap gap-2"><Status value={label('project_status',p.status)}/><TierBadge tier={p.tier}/></div>
   <dl className="mt-5 grid grid-cols-[130px_minmax(0,1fr)] gap-y-2.5 text-xs">{([['Partner',p.partner_name??'Not assigned'],['Chat code',p.code?`${p.code} (partner sends DONE ${p.code} and a photo)`:'None'],['Intervention',label('need',p.intervention)],['Budget',p.budget_usd!=null?`$${p.budget_usd.toLocaleString()}`:'Not set'],['Started',fmtDate(p.started_at)||'Not started'],['Completed',fmtDate(p.completed_at)||'Not yet']] as [string,string][]).map(([k,v])=><div key={k} className="contents"><dt className="text-muted-foreground">{k}</dt><dd className="font-medium">{v}</dd></div>)}</dl>
   <h3 className="mb-3 mt-6 text-sm font-semibold">Milestones</h3>
+  {error&&<p role="alert" className="mb-2 text-xs text-destructive">{error}</p>}
   <ol className="space-y-2">{steps.map(m=><li key={m.id} className="flex gap-3 rounded-md border border-border p-3 text-xs">{m.status==='done'?<CheckCircle2 className="mt-0.5 size-4 shrink-0 text-primary"/>:<Circle className="mt-0.5 size-4 shrink-0 text-muted-foreground"/>}<div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><span className="font-medium">{m.title}</span><Status value={label('milestone_status',m.status)}/></div><p className="mt-1 flex items-center gap-1.5 text-muted-foreground"><CalendarDays className="size-3"/>{m.status==='done'?`Done ${fmtDate(m.completed_at)}`:`Due ${fmtDate(m.due_date)}`}</p>{m.status==='done'&&<p className="mt-1 flex flex-wrap items-center gap-3 text-[10px] text-muted-foreground">{m.reported_via_chat&&<span className="flex items-center gap-1"><MessageSquareText className="size-3"/>Reported from the chat</span>}{m.photo_path&&<span className="flex items-center gap-1"><Camera className="size-3"/>Photo evidence</span>}{m.verified?<span className="flex items-center gap-1 text-primary"><ShieldCheck className="size-3"/>Checked by PS43</span>:<span className="text-warning-ink">Waiting for a PS43 check</span>}</p>}{m.status==='done'&&!m.verified&&<Button size="sm" variant="outline" className="mt-2 h-7 text-[11px]" disabled={busy===m.id} onClick={()=>confirm(m.id)}><ShieldCheck/>{busy===m.id?'Confirming…':'Confirm milestone'}</Button>}</div></li>)}</ol>
   <h3 className="mb-3 mt-6 flex items-center gap-2 text-sm font-semibold"><Camera className="size-4 text-primary"/>Proof photos</h3>
   <Photos paths={photos}/>
