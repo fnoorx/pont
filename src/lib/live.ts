@@ -166,6 +166,8 @@ export interface Project {
   completed_at: string | null;
   milestones_total: number;
   milestones_done: number;
+  /** Short code partners send from the chat, e.g. "DONE PJ-104". */
+  code: string | null;
 }
 
 export interface Milestone {
@@ -179,6 +181,8 @@ export interface Milestone {
   completed_at: string | null;
   photo_path: string | null;
   verified: boolean;
+  /** True when a partner reported it done from the chat. */
+  reported_via_chat: boolean;
 }
 
 export interface Attendance {
@@ -367,6 +371,12 @@ export async function fetchView<T>(view: string): Promise<T[]> {
 
 export async function setVerified(assessmentId: string, verified: boolean): Promise<void> {
   const { error } = await db().rpc("set_assessment_verified", { assessment_id: assessmentId, verified });
+  if (error) throw new Error(error.message);
+}
+
+/** Staff confirm a done milestone. When every milestone is confirmed, the project completes and its partner becomes proven. */
+export async function setMilestoneVerified(milestoneId: string, verified: boolean): Promise<void> {
+  const { error } = await db().rpc("set_milestone_verified", { milestone_id: milestoneId, verified });
   if (error) throw new Error(error.message);
 }
 

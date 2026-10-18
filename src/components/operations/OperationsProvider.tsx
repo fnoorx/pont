@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { db } from '@/lib/ps43';
 import {
-  fetchView, setVerified, REFRESH_MS,
+  fetchView, setMilestoneVerified, setVerified, REFRESH_MS,
   type Assessment, type Attendance, type ImpactSummary, type Match, type Media, type Milestone,
   type PackageCost, type Partner, type Priority, type Project, type Readiness, type RegionStat, type Resource, type School,
 } from '@/lib/live';
@@ -19,6 +19,7 @@ type State = Data & {
   session: 'checking' | 'signed-in' | 'signed-out'; email: string;
   loading: boolean; error: string; updatedAt: number;
   verify: (assessmentId: string, verified: boolean) => Promise<void>;
+  verifyMilestone: (milestoneId: string) => Promise<void>;
   search: string; setSearch: (s: string) => void; notice: string; setNotice: (s: string) => void;
 };
 
@@ -89,6 +90,11 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
       await setVerified(assessmentId, verified);
       await qc.invalidateQueries({ queryKey: ['live'] });
       setNotice(verified ? 'Report marked as verified.' : 'Verification removed.');
+    },
+    verifyMilestone: async (milestoneId) => {
+      await setMilestoneVerified(milestoneId, true);
+      await qc.invalidateQueries({ queryKey: ['live'] });
+      setNotice('Milestone confirmed. When every milestone is confirmed, the project completes and the partner earns trust.');
     },
     search, setSearch, notice, setNotice,
   };
