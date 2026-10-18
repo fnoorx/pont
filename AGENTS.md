@@ -7,13 +7,22 @@ Guidance for AI coding agents and humans working in this repo. Read this fully b
 This is a **hackathon prototype**, not production software. The goal is a working demo that shows judges how the idea solves PS43's problem, using mock data.
 
 ### Priorities, in order
-1. **It works live in the demo.** A judge texts the bot, and their school shows up on the dashboard.
+1. **It works live in the demo.** A judge (or a teammate) reports a school in the WhatsApp-style web chat, and it appears on the dashboard within seconds, scored and ranked.
 2. **It tells the story clearly.** The judging-relevant ideas must be visible:
-   - WhatsApp-first
-   - bilingual
-   - works on basic phones
+   - WhatsApp-first: PS43 already coordinates on WhatsApp, so Pont is a conversation, not an app. The demo is a web replica because WhatsApp's free test numbers can't reach judges' phones; say so plainly.
+   - bilingual (English and French), and works on basic phones (the SMS path)
    - privacy-aware for conflict regions
+   - **the dependency chain:** don't send laptops to a school with no power. Pont recommends what to fund first (safe building, then power, then devices, then internet). This is the strongest idea; it answers the brief's own example.
+   - **resources, not just needs:** what PS43 has to give (equipment, funding, expertise), which schools can use it now, and what cheaper first step unlocks the rest
+   - **trust earned by delivery:** partners join by referral and become Proven when staff confirm their milestones
+   - **measured impact:** headteachers send weekly attendance from the chat, echoing PS43's roof story (attendance back above 80% after a renovation)
 3. **It's simple enough to build in a weekend.**
+
+### How it is judged
+- Shortlist judging: Sunday 2026-10-18 at 12:30 PM. Judges come to the table; each team gets a **3-minute pitch**. Finals at 4 PM.
+- Rubric: Problem Understanding 15, Solution Quality 20, Technical Execution & Demo 20, Innovation 15, Feasibility & Impact 15, Communication & Pitch 15.
+- The submission must include a short **pilot roadmap**: how PS43 could pilot with a few schools or partners, and what to validate. Ours: 10 schools and 3 partners in Littoral and Centre over 12 weeks.
+- The night before judging, keep the live demo stable: test every change end to end and run `npm run demo:reset` after testing on the live project.
 
 ### Do
 - Choose the simplest thing that works.
@@ -448,7 +457,7 @@ Lint and typecheck scripts are nice to have, not blockers.
 
 - **The demo path works end to end:**
   - Seeded dashboard data shows up.
-  - A WhatsApp submission appears on the dashboard.
+  - A web chat submission appears on the dashboard (the same engine would serve WhatsApp and SMS).
 - **Bot copy:** Both languages work.
 - **Privacy:** Sensitive regions show no school pins.
 - **Secrets:** None committed.
