@@ -13,3 +13,6 @@ coverage/
 *.log
 .claude
 
+# Sponsor brand files (logos, brand guide): local only, not ours to publish
+/data/
+

@@ -3,6 +3,7 @@
 // same engine, same database, same privacy rules.
 import { z } from "zod";
 import type { ParsedInbound } from "../messaging/types.ts";
+import { ProcessingError } from "../webhook/handler.ts";
 
 const MAX_IMAGE_DATA_URL = 8_000_000; // about 6 MB of image; the page downsizes photos first
 
@@ -66,6 +67,9 @@ export function createWebChatHandler(deps: WebChatDeps): (req: Request) => Promi
       });
       return json({ replies });
     } catch (err) {
+      // Not handled (yet): a retryable status, so the browser keeps the message and sends it again
+      // with the same id, instead of showing it as delivered with no answer.
+      if (err instanceof ProcessingError) return json({ error: "Try again", retry: true }, 503);
       console.error(JSON.stringify({ message: "web chat error", error: err instanceof Error ? err.message : String(err) }));
       return json({ error: "Server error" }, 500);
     }

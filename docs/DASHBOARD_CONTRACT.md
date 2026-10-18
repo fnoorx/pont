@@ -298,7 +298,7 @@ Supabase Realtime does not work on views. To show new reports "live" (for exampl
 
 ## 8. Demo data
 
-The database is seeded with about 20 **fictional** schools across all 10 regions, 30 reports, a mix of verified and unverified, and notes in English and French. It also has fictional partners, projects, milestones and weekly attendance for the pipeline screens (section 9). Seed data can be wiped and reloaded at any time with `npm run seed` in the `ps43-pont` repo, so do not rely on specific ids.
+The database is seeded with 5 **fictional** schools in 5 regions (Centre, Littoral, West, Southwest, South), 10 reports, a mix of verified and unverified, and notes in English and French. Three are Tier 2 and two are Tier 1; none is unsafe, because the presenter adds a Tier 0 school live from the chat during the pitch. Palm Grove (Southwest) is the one sensitive-region school, so it has no pin. Regions with no school still appear in `dashboard_region_stats` with zero counts. It also has fictional partners, projects, milestones and weekly attendance for the pipeline screens (section 9). Seed data can be wiped and reloaded at any time with `npm run seed` in the `ps43-pont` repo, so do not rely on specific ids.
 
 Real reports from the WhatsApp bot will appear alongside the demo data once the bot is live.
 

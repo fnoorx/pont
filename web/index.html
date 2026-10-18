@@ -395,8 +395,14 @@
             body: JSON.stringify(payload),
             signal: controller.signal,
           });
-          setWaiting(entry, false);
-          return res;
+          // 503: not handled yet (still processing, or a server hiccup). Keep the message
+          // pending and send it again with the same id, like a dropped connection.
+          if (res.status !== 503) {
+            setWaiting(entry, false);
+            return res;
+          }
+          if (gen !== generation) throw new Error("cancelled by New chat");
+          await sleep(2000);
         } catch (err) {
           if (gen !== generation) throw err;
           setWaiting(entry, true);

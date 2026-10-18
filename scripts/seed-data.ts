@@ -58,69 +58,8 @@ export const REPORTERS: SeedReporter[] = [
 ];
 
 export const SCHOOLS: SeedSchool[] = [
-  // Northwest (sensitive, anglophone)
-  {
-    name: "Morning Star Community School", region: "NW", town: "Bamenda", lat: 5.96, lng: 10.15,
-    assessments: [
-      { daysAgo: 41, reporter: 0, enrollment: "300_600", building: "unsafe", power: "none", connectivity: "weak", devices: "none", need: "building", notes: "Roof blown off in the last storm. Classes are held under a tarpaulin.", verified: true, photo: true },
-      { daysAgo: 19, reporter: 1, enrollment: "300_600", building: "unsafe", power: "none", connectivity: "weak", devices: "none", need: "building", notes: "Parents brought some iron sheets but it is not enough for two classrooms.", verified: true },
-      { daysAgo: 3, reporter: 0, enrollment: "300_600", building: "unsafe", power: "none", connectivity: "weak", devices: "none", need: "building", verified: false },
-    ],
-  },
-  {
-    name: "Blue Hibiscus Primary School", region: "NW", town: "Kumbo", lat: 6.20, lng: 10.68,
-    assessments: [
-      { daysAgo: 12, reporter: 2, enrollment: "100_300", building: "needs_repair", power: "none", connectivity: "weak", devices: "none", need: "furniture", notes: "Pupils share benches, three per bench in Class 1.", verified: false },
-    ],
-  },
-  {
-    name: "Hilltop Weaverbird School", region: "NW", town: "Wum", lat: 6.38, lng: 10.07,
-    assessments: [
-      { daysAgo: 30, reporter: 0, enrollment: "lt100", building: "unsafe", power: "none", connectivity: "none", devices: "none", need: "building", verified: true },
-      { daysAgo: 8, reporter: 8, enrollment: "lt100", building: "unsafe", power: "none", connectivity: "none", devices: "none", need: "building", notes: "School reopened last month. Walls are cracked.", verified: false },
-    ],
-  },
-  // Southwest (sensitive, anglophone)
-  {
-    name: "Mountain Mist Primary School", region: "SW", town: "Buea", lat: 4.16, lng: 9.24,
-    assessments: [
-      { daysAgo: 22, reporter: 2, enrollment: "gt600", building: "good", power: "grid_unreliable", connectivity: "good", devices: "few", need: "training", notes: "Teachers want training on using the few tablets we have.", verified: true },
-    ],
-  },
-  {
-    name: "Palm Grove Nursery and Primary", region: "SW", town: "Kumba", lat: 4.64, lng: 9.45,
-    assessments: [
-      { daysAgo: 35, reporter: 1, enrollment: "100_300", building: "needs_repair", power: "solar", connectivity: "weak", devices: "none", need: "computers", verified: true },
-      { daysAgo: 6, reporter: 1, enrollment: "300_600", building: "needs_repair", power: "solar", connectivity: "weak", devices: "none", need: "computers", notes: "Solar panel installed by the community. We have power now but no devices.", verified: false, photo: true },
-    ],
-  },
-  {
-    name: "Seabreeze Bilingual School", region: "SW", town: "Limbe", lat: 4.02, lng: 9.20,
-    assessments: [
-      { daysAgo: 15, reporter: 8, enrollment: "300_600", building: "good", power: "grid_reliable", connectivity: "good", devices: "enough", need: "training", verified: false },
-    ],
-  },
-  // Far North (sensitive, francophone)
-  {
-    name: "École Publique du Baobab Doré", region: "EN", town: "Maroua", lat: 10.59, lng: 14.32,
-    assessments: [
-      { daysAgo: 28, reporter: 9, enrollment: "gt600", building: "unsafe", power: "none", connectivity: "weak", devices: "none", need: "building", notes: "Deux salles de classe sans toit. Les élèves étudient dehors.", verified: true },
-      { daysAgo: 4, reporter: 4, enrollment: "gt600", building: "unsafe", power: "none", connectivity: "weak", devices: "none", need: "furniture", notes: "Le toit est réparé en partie, mais il manque des tables-bancs.", verified: false },
-    ],
-  },
-  {
-    name: "École des Rochers Bleus", region: "EN", town: "Mokolo", lat: 10.74, lng: 13.80,
-    assessments: [
-      { daysAgo: 17, reporter: 6, enrollment: "100_300", building: "needs_repair", power: "solar", connectivity: "none", devices: "none", need: "supplies", notes: "Il manque des livres de lecture pour le CE1 et le CE2.", verified: false },
-    ],
-  },
-  {
-    name: "École Publique du Fleuve Calme", region: "EN", town: "Kousseri", lat: 12.08, lng: 15.03,
-    assessments: [
-      { daysAgo: 9, reporter: 9, enrollment: "300_600", building: "unsafe", power: "none", connectivity: "weak", devices: "none", need: "furniture", verified: true },
-    ],
-  },
-  // Centre
+  // Readiness spread for the pitch: two Tier 1 and three Tier 2. The presenter adds a Tier 0 school live.
+  // Tier 2 (score 100): completed computer lab, so the Impact page has a before/after.
   {
     name: "Lycée des Sept Collines", region: "CE", town: "Yaoundé", lat: 3.87, lng: 11.52,
     assessments: [
@@ -128,13 +67,7 @@ export const SCHOOLS: SeedSchool[] = [
       { daysAgo: 10, reporter: 7, enrollment: "gt600", building: "good", power: "grid_reliable", connectivity: "good", devices: "enough", need: "training", notes: "Nous avons reçu des ordinateurs. Les enseignants ont besoin de formation.", verified: true },
     ],
   },
-  {
-    name: "École Publique du Soleil Levant", region: "CE", town: "Mbalmayo", lat: 3.52, lng: 11.50,
-    assessments: [
-      { daysAgo: 14, reporter: 3, enrollment: "300_600", building: "needs_repair", power: "grid_unreliable", connectivity: "weak", devices: "none", need: "computers", verified: false },
-    ],
-  },
-  // Littoral
+  // Tier 2 (score 100): teacher training in progress.
   {
     name: "Complexe Scolaire Les Palmiers Bleus", region: "LT", town: "Douala", lat: 4.05, lng: 9.70,
     assessments: [
@@ -143,13 +76,7 @@ export const SCHOOLS: SeedSchool[] = [
       { daysAgo: 2, reporter: 3, enrollment: "gt600", building: "good", power: "grid_reliable", connectivity: "good", devices: "enough", need: "training", verified: false },
     ],
   },
-  {
-    name: "École Publique de la Rivière Chantante", region: "LT", town: "Edéa", lat: 3.80, lng: 10.13,
-    assessments: [
-      { daysAgo: 20, reporter: 4, enrollment: "100_300", building: "needs_repair", power: "generator", connectivity: "weak", devices: "few", need: "power", notes: "Le groupe électrogène coûte trop cher en carburant.", verified: false },
-    ],
-  },
-  // West
+  // Tier 2 (score 75): solar and good signal, ready for computers.
   {
     name: "École des Hautes Terres", region: "OU", town: "Dschang", lat: 5.45, lng: 10.05,
     assessments: [
@@ -157,58 +84,19 @@ export const SCHOOLS: SeedSchool[] = [
       { daysAgo: 5, reporter: 6, enrollment: "300_600", building: "good", power: "solar", connectivity: "good", devices: "none", need: "computers", notes: "Le réseau mobile s'est amélioré. Nous sommes prêts pour des ordinateurs.", verified: false },
     ],
   },
+  // Tier 1 (score 50), Southwest: sensitive region, so no map pin.
   {
-    name: "École Publique du Tambour d'Or", region: "OU", town: "Foumban", lat: 5.73, lng: 10.90,
+    name: "Palm Grove Nursery and Primary", region: "SW", town: "Kumba", lat: 4.64, lng: 9.45,
     assessments: [
-      { daysAgo: 11, reporter: 5, enrollment: "100_300", building: "needs_repair", power: "grid_unreliable", connectivity: "weak", devices: "none", need: "supplies", verified: false },
+      { daysAgo: 35, reporter: 1, enrollment: "100_300", building: "needs_repair", power: "solar", connectivity: "weak", devices: "none", need: "computers", verified: true },
+      { daysAgo: 6, reporter: 1, enrollment: "300_600", building: "needs_repair", power: "solar", connectivity: "weak", devices: "none", need: "computers", notes: "Solar panel installed by the community. We have power now but no devices.", verified: false, photo: true },
     ],
   },
-  // Adamawa
-  {
-    name: "École Publique du Plateau Venteux", region: "AD", town: "Ngaoundéré", lat: 7.32, lng: 13.58,
-    assessments: [
-      { daysAgo: 18, reporter: 9, enrollment: "300_600", building: "needs_repair", power: "solar", connectivity: "weak", devices: "few", need: "computers", verified: true },
-    ],
-  },
-  // North
-  {
-    name: "École Publique de l'Étoile du Nord", region: "NO", town: "Garoua", lat: 9.30, lng: 13.40,
-    assessments: [
-      { daysAgo: 38, reporter: 9, enrollment: "gt600", building: "unsafe", power: "none", connectivity: "weak", devices: "none", need: "building", verified: true, photo: true },
-      { daysAgo: 7, reporter: 8, enrollment: "gt600", building: "unsafe", power: "none", connectivity: "weak", devices: "none", need: "building", notes: "Une salle de classe s'est effondrée pendant les pluies. Personne n'a été blessé.", verified: false },
-    ],
-  },
-  // East
-  {
-    name: "École Publique de la Forêt Claire", region: "ES", town: "Bertoua", lat: 4.58, lng: 13.68,
-    assessments: [
-      { daysAgo: 16, reporter: 4, enrollment: "100_300", building: "needs_repair", power: "none", connectivity: "weak", devices: "none", need: "power", verified: false },
-    ],
-  },
-  {
-    name: "École Publique du Grand Fromager", region: "ES", town: "Batouri", lat: 4.43, lng: 14.36,
-    assessments: [
-      { daysAgo: 13, reporter: 5, enrollment: "lt100", building: "unsafe", power: "generator", connectivity: "none", devices: "none", need: "building", notes: "Les murs en terre s'abîment à chaque saison des pluies.", verified: false },
-    ],
-  },
-  // Dependency examples: good buildings with no electricity.
-  {
-    name: "École Publique du Lac Bleu", region: "AD", town: "Meiganga", lat: 6.52, lng: 14.29,
-    assessments: [
-      { daysAgo: 6, reporter: 9, enrollment: "300_600", building: "good", power: "none", connectivity: "weak", devices: "none", need: "computers", notes: "Le bâtiment est solide, mais il n'y a pas d'électricité.", verified: false },
-    ],
-  },
+  // Tier 1 (score 70, capped): laptops but no electricity, so power comes first.
   {
     name: "École Publique des Manguiers", region: "SU", town: "Ebolowa", lat: 2.90, lng: 11.15,
     assessments: [
       { daysAgo: 9, reporter: 7, enrollment: "100_300", building: "good", power: "none", connectivity: "good", devices: "enough", need: "internet", notes: "Nous avons reçu 15 ordinateurs portables, mais pas d'électricité pour les charger.", verified: true },
-    ],
-  },
-  // South
-  {
-    name: "École Publique des Vagues Douces", region: "SU", town: "Kribi", lat: 2.94, lng: 9.91,
-    assessments: [
-      { daysAgo: 21, reporter: 7, enrollment: "100_300", building: "good", power: "solar", connectivity: "good", devices: "none", need: "computers", verified: true },
     ],
   },
 ];
@@ -283,6 +171,7 @@ export interface SeedProject {
 }
 
 export const PROJECTS: SeedProject[] = [
+  // Order sets the chat codes: PJ-101 to PJ-104 (Palm Grove is PJ-104, the example in the docs).
   {
     school: "Lycée des Sept Collines", partner: "yaounde_tech", title: "Computer lab with 20 laptops", intervention: "computers", tier: "tier2",
     status: "completed", budgetUsd: 14000, startedDaysAgo: 75, completedDaysAgo: 42,
@@ -291,34 +180,6 @@ export const PROJECTS: SeedProject[] = [
       { title: "Delivered to school", done: true, dueInDays: -60, completedDaysAgo: 58, photo: true, verified: true },
       { title: "Lab installed and tested", done: true, dueInDays: -50, completedDaysAgo: 47, photo: true, verified: true },
       { title: "Handover to headteacher", done: true, dueInDays: -42, completedDaysAgo: 42, verified: true },
-    ],
-  },
-  {
-    school: "École Publique du Baobab Doré", partner: "sahel_ecoles", title: "Roof repair for two classrooms", intervention: "building", tier: "tier0",
-    status: "completed", budgetUsd: 6500, startedDaysAgo: 40, completedDaysAgo: 12,
-    milestones: [
-      { title: "Materials purchased", done: true, dueInDays: -35, completedDaysAgo: 36, verified: true },
-      { title: "Roof frame rebuilt", done: true, dueInDays: -22, completedDaysAgo: 20, photo: true, verified: true },
-      { title: "Roof sheets installed", done: true, dueInDays: -14, completedDaysAgo: 12, photo: true, verified: false },
-    ],
-  },
-  {
-    school: "Morning Star Community School", partner: "bamenda_builders", title: "Emergency roof and wall repair", intervention: "building", tier: "tier0",
-    status: "in_progress", budgetUsd: 8200, startedDaysAgo: 16,
-    milestones: [
-      { title: "Materials purchased", done: true, dueInDays: -12, completedDaysAgo: 11, photo: true, verified: true },
-      { title: "Walls reinforced", done: false, dueInDays: 5 },
-      { title: "New roof installed", done: false, dueInDays: 20 },
-      { title: "Final inspection with photo", done: false, dueInDays: 28 },
-    ],
-  },
-  {
-    school: "Palm Grove Nursery and Primary", partner: "limbe_hub", title: "Offline learning kit: content server and 10 tablets", intervention: "computers", tier: "tier1",
-    status: "in_progress", budgetUsd: 4800, startedDaysAgo: 20,
-    milestones: [
-      { title: "Tablets and server purchased", done: true, dueInDays: -15, completedDaysAgo: 14, verified: true },
-      { title: "Delivered to school", done: true, dueInDays: -6, completedDaysAgo: 5, photo: true, verified: false },
-      { title: "Teachers trained", done: false, dueInDays: 10 },
     ],
   },
   {
@@ -332,30 +193,21 @@ export const PROJECTS: SeedProject[] = [
     ],
   },
   {
-    school: "École des Hautes Terres", partner: "solarbridge", title: "Offline learning kit: content server and 10 tablets", intervention: "computers", tier: "tier1",
-    status: "planned", budgetUsd: 4800,
-    milestones: [
-      { title: "Tablets and server purchased", done: false, dueInDays: 14 },
-      { title: "Delivered to school", done: false, dueInDays: 30 },
-      { title: "Teachers trained", done: false, dueInDays: 40 },
-    ],
-  },
-  {
-    school: "École Publique du Baobab Doré", partner: "maroua_menuiserie", title: "120 desks (tables-bancs)", intervention: "furniture", tier: "tier0",
-    status: "planned", budgetUsd: 3600,
-    milestones: [
-      { title: "Order placed", done: false, dueInDays: 7 },
-      { title: "Desks delivered", done: false, dueInDays: 35 },
-      { title: "Final check with photo", done: false, dueInDays: 40 },
-    ],
-  },
-  {
-    school: "École Publique de l'Étoile du Nord", partner: "benoue", title: "Rebuild collapsed classroom", intervention: "building", tier: "tier0",
+    school: "École des Hautes Terres", partner: "solarbridge", title: "Computer lab with 15 laptops", intervention: "computers", tier: "tier2",
     status: "planned", budgetUsd: 9500,
     milestones: [
-      { title: "Site assessment", done: false, dueInDays: 10 },
-      { title: "Materials purchased", done: false, dueInDays: 25 },
-      { title: "Classroom rebuilt", done: false, dueInDays: 75 },
+      { title: "Laptops purchased", done: false, dueInDays: 14 },
+      { title: "Delivered to school", done: false, dueInDays: 30 },
+      { title: "Lab installed and tested", done: false, dueInDays: 40 },
+    ],
+  },
+  {
+    school: "Palm Grove Nursery and Primary", partner: "limbe_hub", title: "Offline learning kit: content server and 10 tablets", intervention: "computers", tier: "tier1",
+    status: "in_progress", budgetUsd: 4800, startedDaysAgo: 20,
+    milestones: [
+      { title: "Tablets and server purchased", done: true, dueInDays: -15, completedDaysAgo: 14, verified: true },
+      { title: "Delivered to school", done: true, dueInDays: -6, completedDaysAgo: 5, photo: true, verified: false },
+      { title: "Teachers trained", done: false, dueInDays: 10 },
     ],
   },
 ];

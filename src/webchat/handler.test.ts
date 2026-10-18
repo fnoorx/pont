@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { engine } from "../engine/index.ts";
-import { createInboundProcessor } from "../webhook/handler.ts";
+import { createInboundProcessor, ProcessingError } from "../webhook/handler.ts";
 import { MemoryStore } from "../webhook/memoryStore.ts";
 import { createWebChatHandler, type WebChatRequest } from "./handler.ts";
 
@@ -63,6 +63,20 @@ describe("web chat handler", () => {
     const { send } = setup();
     expect((await send({ clientId: "not-a-uuid" } as Partial<WebChatRequest>)).status).toBe(400);
     expect((await send({ image: { dataUrl: "data:text/html;base64,PGgxPg==" } })).status).toBe(400);
+  });
+
+  it("answers a failed message with a retryable 503, so the browser keeps it and sends it again", async () => {
+    const handler = createWebChatHandler({ processInbound: async () => { throw new ProcessingError("db down", ["Sorry"]); } });
+    const res = await handler(
+      new Request("http://local/web-chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientId, messageId: nextId(), text: "hi" }),
+      }),
+    );
+    expect(res.status).toBe(503);
+    expect(((await res.json()) as { replies?: string[] }).replies).toBeUndefined();
+    expect(res.headers.get("Access-Control-Allow-Origin")).toBe("*");
   });
 
   it("answers an unexpected error as JSON with CORS headers, so the browser does not mistake it for no signal", async () => {

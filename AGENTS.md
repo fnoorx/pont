@@ -429,12 +429,13 @@ Twilio's free trial no longer lets us point the WhatsApp sandbox at our webhook,
 
 ## 10. Seed and demo data
 
-- About 20 fictional schools across at least 6 regions, including some in NW, SW and EN so the privacy behaviour is visible.
+- 5 fictional schools for a clean pitch: three Tier 2 and two Tier 1, one of them in a sensitive region (SW) so the privacy behaviour is visible. The presenter adds a Tier 0 school live from the chat.
 - English and French names and notes matching the region. Names must be clearly fictional.
-- Realistic spread:
-  - Unsafe buildings with no power.
+- Realistic spread, chosen so each rule shows up:
   - Solar schools wanting computers.
   - Good infrastructure wanting teacher training.
+  - Laptops but no electricity (Tier 1 cap, "fund power first").
+  - No unsafe buildings in the seed: the live Tier 0 report shows the safety-first rule.
 - Some schools with 2 to 3 assessments.
 - Mix of verified and unverified.
 - A few seeded placeholder building photos are welcome.

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { engine as assessmentEngine } from "../engine/index.ts";
 import type { Engine } from "../engine/types.ts";
 import type { ParsedInbound } from "../messaging/types.ts";
-import { createInboundProcessor } from "./handler.ts";
+import { createInboundProcessor, ProcessingError } from "./handler.ts";
 import { MemoryStore } from "./memoryStore.ts";
 
 const SID1 = "SM" + "1".repeat(32);
@@ -69,7 +69,7 @@ describe("inbound processor", () => {
     const broken: Engine = () => {
       throw new Error("boom");
     };
-    await processor(broken)(inbound(SID1));
+    await expect(processor(broken)(inbound(SID1))).rejects.toBeInstanceOf(ProcessingError);
     const retry = await processor()(inbound(SID1));
     expect(retry[0]).toContain("Choose your language");
   });
@@ -96,13 +96,20 @@ describe("inbound processor", () => {
     expect(JSON.stringify(store.messages)).not.toContain("5.963");
   });
 
-  it("sends a friendly error instead of failing when something breaks", async () => {
+  it("reports a failure with a friendly apology for text-only channels", async () => {
     const broken: Engine = () => {
       throw new Error("boom");
     };
-    const [reply] = await processor(broken)(inbound(SID1));
+    const err = await processor(broken)(inbound(SID1)).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ProcessingError);
+    const [reply] = (err as ProcessingError).replies;
     expect(reply).toContain("Désolé");
     expect(reply).toContain("Sorry");
+  });
+
+  it("asks for a retry, not an empty answer, while the first attempt is still running", async () => {
+    await store.markProcessed(SID1); // the first attempt has started but not saved its replies yet
+    await expect(processor()(inbound(SID1))).rejects.toBeInstanceOf(ProcessingError);
   });
 });
 

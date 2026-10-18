@@ -61,8 +61,20 @@ function inboundLogBody(parsed: ParsedInbound): string {
 }
 
 /**
+ * A message that was not handled. A retry with the same id is processed (or answered) later.
+ * `replies` is a friendly apology for channels that can only show text (SMS, the simulator);
+ * the web chat answers with a retryable status instead, so the browser keeps the message.
+ */
+export class ProcessingError extends Error {
+  constructor(message: string, readonly replies: string[]) {
+    super(message);
+    this.name = "ProcessingError";
+  }
+}
+
+/**
  * Handles one parsed inbound message end to end and returns the reply texts.
- * Never throws: failures become a friendly error reply.
+ * Throws ProcessingError when the message was not handled (or is still being handled).
  */
 export function createInboundProcessor(deps: ProcessorDeps): (parsed: ParsedInbound) => Promise<string[]> {
   const { store, engine } = deps;
@@ -95,27 +107,31 @@ export function createInboundProcessor(deps: ProcessorDeps): (parsed: ParsedInbo
     return stored;
   }
 
-  const fail = (parsed: ParsedInbound, language: Language | null, err: unknown): string[] => {
-    log("error handling message", {
-      messageSid: parsed.messageSid,
-      error: err instanceof Error ? err.message : String(err),
-    });
+  const fail = (parsed: ParsedInbound, language: Language | null, err: unknown): never => {
+    const message = err instanceof Error ? err.message : String(err);
+    log("error handling message", { messageSid: parsed.messageSid, error: message });
     const error = language ? t("error_generic", language) : bilingual("error_generic");
-    return [parsed.channel === "sms" ? toGsm7(error) : error];
+    throw new ProcessingError(message, [parsed.channel === "sms" ? toGsm7(error) : error]);
   };
 
   return async (parsed) => {
-    let fresh: boolean;
+    let fresh = false;
+    let previous: string[] | null = null;
     try {
       fresh = await store.markProcessed(parsed.messageSid);
-      if (!fresh) {
-        // A retry of a message whose response was lost: send the same replies again,
-        // so the reporter still gets the next question and its buttons.
-        log("duplicate: resending replies", { messageSid: parsed.messageSid });
-        return (await store.previousReplies(parsed.messageSid)) ?? [];
-      }
+      if (!fresh) previous = await store.previousReplies(parsed.messageSid);
     } catch (err) {
-      return fail(parsed, null, err);
+      fail(parsed, null, err);
+    }
+    if (!fresh) {
+      // A retry of a message whose response was lost: send the same replies again,
+      // so the reporter still gets the next question and its buttons.
+      if (previous) {
+        log("duplicate: resending replies", { messageSid: parsed.messageSid });
+        return previous;
+      }
+      // The first attempt is still running. Ask the caller to try again shortly.
+      throw new ProcessingError("still processing", []);
     }
 
     let language: Language | null = null;

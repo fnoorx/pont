@@ -14,7 +14,7 @@ import { createClient } from "@supabase/supabase-js";
 import { engine } from "../src/engine/index.ts";
 import type { Channel } from "../src/engine/types.ts";
 import type { ParsedInbound } from "../src/messaging/types.ts";
-import { createInboundProcessor } from "../src/webhook/handler.ts";
+import { createInboundProcessor, ProcessingError } from "../src/webhook/handler.ts";
 import { MemoryStore } from "../src/webhook/memoryStore.ts";
 import type { Store } from "../src/webhook/store.ts";
 import { createSupabaseStore } from "../src/webhook/supabaseStore.ts";
@@ -112,7 +112,10 @@ async function main(): Promise<void> {
         prompt();
         continue;
       }
-      const replies = await processInbound(inbound);
+      const replies = await processInbound(inbound).catch((err: unknown) => {
+        if (err instanceof ProcessingError) return err.replies;
+        throw err;
+      });
       for (const reply of replies) {
         console.log("\npont >", reply.replace(/\n/g, "\n       "), "\n");
       }
