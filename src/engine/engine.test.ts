@@ -410,3 +410,47 @@ describe("weekly attendance", () => {
     expect(chat.step).toBe("role");
   });
 });
+
+describe("partner milestone updates", () => {
+  const project = { code: "PJ-104", projectTitle: "Offline learning kit", schoolName: "Palm Grove", nextMilestone: "Teachers trained", done: 2, total: 3 };
+  const partner = (channel: Channel = "whatsapp") => new Chat(channel, { language: "en", consentAt: "2026-10-01T00:00:00.000Z" });
+  const photo: StoredMedia = { type: "photo", storagePath: "pending/r1/MM1-0.jpg", contentType: "image/jpeg" };
+
+  it("shows the next milestone, then records it with a photo", () => {
+    const chat = partner();
+    expect(chat.send("DONE PJ-104", { project })).toContain("Next milestone: Teachers trained");
+    const done = chat.send("", { media: [photo] });
+    expect(done).toContain("\"Teachers trained\" is marked done (3 of 3)");
+    expect(chat.last?.milestone).toEqual({ code: "PJ-104", photo });
+    expect(chat.session?.status).toBe("completed");
+  });
+
+  it("accepts French and a missing dash, and records without a photo on 0", () => {
+    const chat = partner();
+    chat.send("fait pj104", { project });
+    chat.send("0");
+    expect(chat.last?.milestone).toEqual({ code: "PJ-104", photo: null });
+  });
+
+  it("records straight away on SMS, which has no photos", () => {
+    const chat = partner("sms");
+    expect(chat.send("DONE PJ-104", { project })).toContain("marked done");
+    expect(chat.last?.milestone).toEqual({ code: "PJ-104", photo: null });
+  });
+
+  it("explains an unknown code and a finished project", () => {
+    expect(partner().send("DONE PJ-999", { project: null })).toContain("could not find project PJ-999");
+    expect(partner().send("DONE PJ-104", { project: { ...project, nextMilestone: null } })).toContain("already done");
+  });
+
+  it("does not interrupt a school report in progress", () => {
+    const chat = partner();
+    chat.send("hi");
+    chat.send("1");
+    chat.send("Hillside School");
+    const reply = chat.send("DONE PJ-104", { project });
+    expect(reply).toContain("send RESTART first");
+    expect(chat.step).toBe("region");
+    expect(chat.last?.milestone).toBeUndefined();
+  });
+});

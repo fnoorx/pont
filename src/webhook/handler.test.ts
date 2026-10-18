@@ -72,3 +72,25 @@ describe("inbound processor", () => {
     expect(reply).toContain("Sorry");
   });
 });
+
+describe("partner milestone updates through the processor", () => {
+  it("looks up the project and stores the milestone photo path", async () => {
+    const store = new MemoryStore();
+    store.projects.set("PJ-104", { title: "Offline learning kit", school: "Palm Grove", milestones: [{ title: "Delivered", done: true }, { title: "Teachers trained", done: false }] });
+    const fakeFetch: typeof fetch = async () => new Response(new Uint8Array([1, 2, 3]), { status: 200 });
+    const process = createInboundProcessor({ store, engine: assessmentEngine, phoneHashSalt: "salt", fetchImpl: fakeFetch, log: () => {} });
+    const send = (sid: string, extra: Partial<ParsedInbound>) => process(inbound(sid, extra));
+
+    // Consent first, as every reporter does.
+    await send("SM" + "a".repeat(32), { text: "hi" });
+    await send("SM" + "b".repeat(32), { text: "1" });
+    await send("SM" + "c".repeat(32), { text: "1" });
+    const [ask] = await send("SM" + "d".repeat(32), { text: "DONE PJ-104" });
+    expect(ask).toContain("Next milestone: Teachers trained");
+    const [thanks] = await send("MM" + "e".repeat(32), { text: "", media: [{ url: "data:image/jpeg;base64,AAAA", contentType: "image/jpeg" }] });
+    expect(thanks).toContain("(2 of 2)");
+    const trained = store.projects.get("PJ-104")!.milestones[1]!;
+    expect(trained.done).toBe(true);
+    expect(trained.photoPath).toMatch(/^pending\/r1\/MM.+-0\.jpg$/);
+  });
+});

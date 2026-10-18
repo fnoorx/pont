@@ -1,6 +1,15 @@
 // Persistence used by the webhook handler. Kept as an interface so the handler
 // can be tested without a database.
-import type { Attendance, Channel, ReporterSnapshot, ReporterUpdate, Session, Submission } from "../engine/types.ts";
+import type {
+  Attendance,
+  Channel,
+  MilestoneReport,
+  ProjectLookup,
+  ReporterSnapshot,
+  ReporterUpdate,
+  Session,
+  Submission,
+} from "../engine/types.ts";
 
 export interface NewReporter {
   /** NULL for the web channel, which has no phone number. */
@@ -29,4 +38,8 @@ export interface Store {
   submitAssessment(reporterId: string, submission: Submission): Promise<string>;
   /** Saves this week's attendance for the school from the reporter's latest report. */
   submitAttendance(reporterId: string, attendance: Attendance): Promise<void>;
+  /** The project with this code (e.g. "PJ-104"), or null. */
+  findProject(code: string): Promise<ProjectLookup | null>;
+  /** Marks the project's next pending milestone done, waiting for a staff check. */
+  reportMilestone(report: MilestoneReport): Promise<void>;
 }

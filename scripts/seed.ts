@@ -152,6 +152,8 @@ async function seedPipeline(
         .from("projects")
         .insert({
           school_id: schoolId,
+          // Short code a partner sends from the chat, e.g. "DONE PJ-104".
+          code: `PJ-${101 + pi}`,
           partner_id: partnerIdByKey.get(p.partner),
           title: p.title,
           intervention: p.intervention,

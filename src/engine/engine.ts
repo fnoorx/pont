@@ -2,7 +2,7 @@
 // (session, inboundMessage) => { nextSession, outboundMessages, reporterUpdate?, submission? }
 // No I/O. All copy comes from flow.ts and strings.ts.
 import { FIRST_REPORT_STEP, FLOW, STEP_BY_ID, type ChoiceStep, type Step } from "./flow.ts";
-import { cleanText, isSkip, matchOption, normalize, parseCommand, parseNumber } from "./parse.ts";
+import { cleanText, isSkip, matchOption, normalize, parseCommand, parseMilestoneCode, parseNumber } from "./parse.ts";
 import { t } from "./strings.ts";
 import {
   REF_CODE_TOKEN,
@@ -11,6 +11,7 @@ import {
   type EngineResult,
   type InboundMessage,
   type Language,
+  type MilestoneReport,
   type ReporterUpdate,
   type Session,
   type StoredMedia,
@@ -31,8 +32,10 @@ const DONE = "done";
 const HOME = "home";
 const ATT_PRESENT = "att_present";
 const ATT_ENROLLED = "att_enrolled";
+/** A partner reporting a project milestone ("DONE PJ-104"), waiting for the photo. */
+const MS_PHOTO = "ms_photo";
 /** Steps that are not part of a school report, so the resume prompt never interrupts them. */
-const NON_REPORT_STEPS = new Set([RESUME, MENU, HOME, ATT_PRESENT, ATT_ENROLLED]);
+const NON_REPORT_STEPS = new Set([RESUME, MENU, HOME, ATT_PRESENT, ATT_ENROLLED, MS_PHOTO]);
 const MAX_STUDENTS = 20_000;
 /** "ATT 212 250" (present, enrolled) from anywhere in the chat. Works well over SMS. */
 const ATT_SHORTCUT = /^(?:att|attendance|presence|presences)\s+(\d{1,5})\s+(\d{1,5})$/;
@@ -55,6 +58,7 @@ interface Turn {
   reporterUpdate?: ReporterUpdate;
   submission?: Submission;
   attendance?: Attendance;
+  milestone?: MilestoneReport;
 }
 
 // ---------------------------------------------------------------------------
@@ -125,6 +129,13 @@ function promptFor(stepId: string, ctx: Ctx): string {
   if (stepId === HOME) return t("home_menu", lang, { school: ctx.inbound.reporter.lastSchoolName ?? "" });
   if (stepId === ATT_PRESENT) return t("att_present", lang);
   if (stepId === ATT_ENROLLED) return t("att_enrolled", lang);
+  if (stepId === MS_PHOTO) {
+    return t("ms_ask_photo", lang, {
+      project: str(ctx.answers, "ms_project") ?? "",
+      school: str(ctx.answers, "ms_school") ?? "",
+      milestone: str(ctx.answers, "ms_milestone") ?? "",
+    });
+  }
   const step = STEP_BY_ID.get(stepId);
   if (!step) return "";
   if (step.kind === "confirm") return summary(ctx.answers, lang);
@@ -312,6 +323,55 @@ function handleShortcut(ctx: Ctx, input: string, active: boolean): Turn | null {
   return reply(attendanceThanks(ctx, attendance), attendance);
 }
 
+function milestoneDone(ctx: Ctx, photo: MilestoneReport["photo"]): Turn {
+  const a = ctx.answers;
+  const milestone = { code: str(a, "ms_code") ?? "", photo };
+  const message = t("ms_thanks", languageOf(ctx), {
+    milestone: str(a, "ms_milestone") ?? "",
+    done: (typeof a.ms_done === "number" ? a.ms_done : 0) + 1,
+    total: typeof a.ms_total === "number" ? a.ms_total : 0,
+  });
+  return { step: DONE, answers: a, status: "completed", messages: [message], milestone };
+}
+
+/**
+ * "DONE PJ-104" from a partner: show the project's next milestone and ask for a photo
+ * (SMS has no photos, so it is recorded straight away). Returns null for any other message.
+ */
+function handleMilestoneCommand(ctx: Ctx, input: string, active: boolean): Turn | null {
+  const code = parseMilestoneCode(input);
+  if (!code || !isConsented(ctx)) return null;
+  const lang = languageOf(ctx);
+  // Only protect a report that has really started; a partner who has just consented sits at the role question.
+  const started = active && !NON_REPORT_STEPS.has(ctx.step) && str(ctx.answers, "school_name") !== null;
+  if (started) return reask(ctx, t("ms_finish_report_first", lang));
+
+  const project = ctx.inbound.project;
+  if (!project) return { step: DONE, answers: {}, status: "completed", messages: [t("ms_unknown", lang, { code })] };
+  if (!project.nextMilestone) {
+    return { step: DONE, answers: {}, status: "completed", messages: [t("ms_all_done", lang, { project: project.projectTitle })] };
+  }
+  const answers: Answers = {
+    language: lang ?? "fr",
+    ms_code: project.code,
+    ms_project: project.projectTitle,
+    ms_school: project.schoolName,
+    ms_milestone: project.nextMilestone,
+    ms_done: project.done,
+    ms_total: project.total,
+  };
+  const next = { ...ctx, answers };
+  if (ctx.inbound.channel === "sms") return milestoneDone(next, null);
+  return { step: MS_PHOTO, answers, messages: [promptFor(MS_PHOTO, next)] };
+}
+
+function handleMilestonePhoto(ctx: Ctx, input: string): Turn {
+  const photo = ctx.inbound.media.find((m) => m.type === "photo");
+  if (photo) return milestoneDone(ctx, photo);
+  if (isSkip(input)) return milestoneDone(ctx, null);
+  return { step: ctx.step, answers: ctx.answers, messages: [t("ms_hint_photo", languageOf(ctx))] };
+}
+
 function handleChoice(ctx: Ctx, step: ChoiceStep, input: string): Turn {
   const option = matchOption(step.options, input);
   if (!option) return reask(ctx, choiceHint(ctx, step.options.length));
@@ -453,6 +513,7 @@ function toResult(ctx: Ctx, turn: Turn): EngineResult {
   if (turn.reporterUpdate) result.reporterUpdate = turn.reporterUpdate;
   if (turn.submission) result.submission = turn.submission;
   if (turn.attendance) result.attendance = turn.attendance;
+  if (turn.milestone) result.milestone = turn.milestone;
   return result;
 }
 
@@ -470,7 +531,7 @@ export const assessmentEngine: Engine = (session, inbound) => {
   const idle = active ? Date.parse(inbound.receivedAt) - Date.parse(active.updatedAt) : 0;
   const live = Boolean(active) && idle <= SESSION_EXPIRY_MS;
 
-  const shortcut = handleShortcut(ctx, input, live);
+  const shortcut = handleShortcut(ctx, input, live) ?? handleMilestoneCommand(ctx, input, live);
   if (shortcut) return toResult(ctx, shortcut);
 
   if (!live) return toResult(ctx, startConversation(ctx));
@@ -491,6 +552,7 @@ export const assessmentEngine: Engine = (session, inbound) => {
   if (ctx.step === MENU) return toResult(ctx, handleMenu(ctx, input));
   if (ctx.step === HOME) return toResult(ctx, handleHome(ctx, input));
   if (ctx.step === ATT_PRESENT || ctx.step === ATT_ENROLLED) return toResult(ctx, handleAttendance(ctx, input));
+  if (ctx.step === MS_PHOTO) return toResult(ctx, handleMilestonePhoto(ctx, input));
 
   const step = STEP_BY_ID.get(ctx.step);
   if (!step) return toResult(ctx, startReport(ctx, null));

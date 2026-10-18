@@ -95,6 +95,32 @@ export const STRINGS = {
     fr: "Merci ! {present} élèves sur {enrolled} sont venus à {school} cette semaine ({rate} %). La semaine prochaine, envoyez simplement ATT {present} {enrolled}.",
   },
 
+  // Partner milestone updates ("DONE PJ-104").
+  ms_ask_photo: {
+    en: "{project} at {school}. Next milestone: {milestone}. Please send a photo of the finished work (the building or equipment, no people). Reply 0 to send without a photo.",
+    fr: "{project} à {school}. Prochaine étape : {milestone}. Envoyez une photo du travail terminé (le bâtiment ou le matériel, sans personnes). Répondez 0 pour envoyer sans photo.",
+  },
+  ms_hint_photo: {
+    en: "Please send a photo of the finished work, or reply 0 to send without a photo.",
+    fr: "Merci d'envoyer une photo du travail terminé, ou répondez 0 pour envoyer sans photo.",
+  },
+  ms_thanks: {
+    en: "Thank you! \"{milestone}\" is marked done ({done} of {total}). PS43 will check it and confirm.",
+    fr: "Merci ! « {milestone} » est marqué comme terminé ({done} sur {total}). PS43 va vérifier et confirmer.",
+  },
+  ms_unknown: {
+    en: "I could not find project {code}. Check the code on your PS43 project sheet and try again, for example DONE PJ-104.",
+    fr: "Je n'ai pas trouvé le projet {code}. Vérifiez le code sur votre fiche projet PS43 et réessayez, par exemple FAIT PJ-104.",
+  },
+  ms_all_done: {
+    en: "Every milestone of {project} is already done. Thank you!",
+    fr: "Toutes les étapes de {project} sont déjà terminées. Merci !",
+  },
+  ms_finish_report_first: {
+    en: "Please finish this report or send RESTART first, then send DONE and your project code.",
+    fr: "Merci de terminer ce signalement ou d'écrire RECOMMENCER, puis envoyez FAIT et le code du projet.",
+  },
+
   // Summary and submission.
   summary_intro: {
     en: "Please check your report:",

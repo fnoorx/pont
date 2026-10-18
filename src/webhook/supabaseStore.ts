@@ -1,6 +1,6 @@
 // Store backed by Supabase, using the service role. Webhook and scripts only.
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { ReporterSnapshot, Session } from "../engine/types.ts";
+import type { ProjectLookup, ReporterSnapshot, Session } from "../engine/types.ts";
 import type { Store } from "./store.ts";
 
 const BUCKET = "field-media";
@@ -132,6 +132,20 @@ export function createSupabaseStore(db: SupabaseClient): Store {
         p_enrolled: attendance.enrolled,
       });
       if (error) throw new Error(`submit attendance: ${error.message}`);
+    },
+
+    async findProject(code) {
+      const { data, error } = await db.rpc("find_project_for_milestone", { p_code: code });
+      if (error) throw new Error(`find project: ${error.message}`);
+      return (data as ProjectLookup | null) ?? null;
+    },
+
+    async reportMilestone(report) {
+      const { error } = await db.rpc("report_milestone", {
+        p_code: report.code,
+        p_photo_path: report.photo?.storagePath ?? null,
+      });
+      if (error) throw new Error(`report milestone: ${error.message}`);
     },
   };
 }

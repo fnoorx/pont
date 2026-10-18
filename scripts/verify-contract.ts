@@ -39,10 +39,11 @@ const VIEW_COLUMNS: Record<string, string[]> = {
   dashboard_projects: [
     "id", "school_id", "school_name", "region_code", "region_name", "is_sensitive", "partner_id", "partner_name",
     "title", "intervention", "tier", "status", "budget_usd", "started_at", "completed_at", "milestones_total",
-    "milestones_done",
+    "milestones_done", "code",
   ],
   dashboard_milestones: [
     "id", "project_id", "school_id", "sort_order", "title", "status", "due_date", "completed_at", "photo_path", "verified",
+    "reported_via_chat",
   ],
   dashboard_attendance: [
     "school_id", "school_name", "region_code", "week_start", "students_present", "students_enrolled", "attendance_rate",

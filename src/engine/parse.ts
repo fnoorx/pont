@@ -57,6 +57,12 @@ export function matchOption(options: Option[], normalized: string): Option | nul
   return null;
 }
 
+/** "done pj-104", "fait PJ 104", "termine pj104" -> "PJ-104". Takes normalized text. */
+export function parseMilestoneCode(normalized: string): string | null {
+  const match = /^(?:done|fait|termine)\s+pj\s*-?\s*(\d{3,4})$/.exec(normalized);
+  return match ? `PJ-${match[1]}` : null;
+}
+
 /** Tidy free text for storage: collapse whitespace, trim. */
 export function cleanText(text: string): string {
   return text.replace(/\s+/g, " ").trim();

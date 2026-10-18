@@ -45,6 +45,28 @@ export interface InboundMessage {
   location: { lat: number; lng: number } | null;
   receivedAt: string;
   reporter: ReporterSnapshot;
+  /**
+   * Set by the webhook when the text is a milestone command ("DONE PJ-104"): the project it names,
+   * or null when no project has that code. Undefined for every other message.
+   */
+  project?: ProjectLookup | null;
+}
+
+/** A project as a partner sees it in the chat. */
+export interface ProjectLookup {
+  code: string;
+  projectTitle: string;
+  schoolName: string;
+  /** Title of the next pending milestone, or null when every milestone is done. */
+  nextMilestone: string | null;
+  done: number;
+  total: number;
+}
+
+/** A partner reported the next milestone of a project as done. */
+export interface MilestoneReport {
+  code: string;
+  photo: StoredMedia | null;
 }
 
 export interface OutboundMessage {
@@ -89,6 +111,7 @@ export interface EngineResult {
   submission?: Submission;
   /** A weekly attendance count for the reporter's latest school. */
   attendance?: Attendance;
+  milestone?: MilestoneReport;
 }
 
 /** Aggregate counts only, never student-level data. */

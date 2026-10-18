@@ -1,6 +1,7 @@
 // Handles one inbound message (AGENTS.md section 9). Shared by the web chat Edge Function and
 // the simulator, so it runs in Deno and Node alike.
 // Order: idempotency, reporter, session, media, engine, persist, reply.
+import { normalize, parseMilestoneCode } from "../engine/parse.ts";
 import { bilingual, t } from "../engine/strings.ts";
 import {
   REF_CODE_TOKEN,
@@ -115,6 +116,8 @@ export function createInboundProcessor(deps: ProcessorDeps): (parsed: ParsedInbo
 
       const session: Session | null = await store.loadActiveSession(reporter.id);
       const media = await downloadMedia(reporter.id, parsed.messageSid, parsed.media);
+      // A partner milestone command ("DONE PJ-104") needs the project, which the pure engine cannot look up.
+      const projectCode = parseMilestoneCode(normalize(parsed.text));
 
       const result = engine(session, {
         messageSid: parsed.messageSid,
@@ -124,12 +127,14 @@ export function createInboundProcessor(deps: ProcessorDeps): (parsed: ParsedInbo
         location: parsed.location,
         receivedAt: now().toISOString(),
         reporter,
+        ...(projectCode ? { project: await store.findProject(projectCode) } : {}),
       });
 
       // Submit before saving the session: if the write fails, the reporter can simply reply again.
       let refCode: string | null = null;
       if (result.submission) refCode = await store.submitAssessment(reporter.id, result.submission);
       if (result.attendance) await store.submitAttendance(reporter.id, result.attendance);
+      if (result.milestone) await store.reportMilestone(result.milestone);
       await store.saveSession(reporter.id, result.nextSession);
       if (result.reporterUpdate && Object.keys(result.reporterUpdate).length > 0) {
         await store.updateReporter(reporter.id, result.reporterUpdate);

@@ -1,5 +1,13 @@
 // In-memory Store for tests and the offline simulator. Not for production use.
-import type { Attendance, ReporterSnapshot, ReporterUpdate, Session, Submission } from "../engine/types.ts";
+import type {
+  Attendance,
+  MilestoneReport,
+  ProjectLookup,
+  ReporterSnapshot,
+  ReporterUpdate,
+  Session,
+  Submission,
+} from "../engine/types.ts";
 import type { MessageLogRow, NewReporter, Store } from "./store.ts";
 
 type StoredReporter = ReporterSnapshot & { phoneHash: string; phoneE164: string | null; phoneLast4: string | null };
@@ -12,6 +20,8 @@ export class MemoryStore implements Store {
   uploads: { path: string; size: number; contentType: string }[] = [];
   submissions: { reporterId: string; submission: Submission; refCode: string }[] = [];
   attendance: ({ reporterId: string; school: string } & Attendance)[] = [];
+  /** Projects by code, for partner milestone updates. Tests add their own. */
+  projects = new Map<string, { title: string; school: string; milestones: { title: string; done: boolean; photoPath?: string | null }[] }>();
 
   async markProcessed(sid: string): Promise<boolean> {
     if (this.processed.has(sid)) return false;
@@ -65,6 +75,26 @@ export class MemoryStore implements Store {
     const last = this.lastSubmission(reporterId);
     if (!last) throw new Error(`reporter ${reporterId} has no reported school`);
     this.attendance.push({ reporterId, school: last.submission.school.name, ...attendance });
+  }
+
+  async findProject(code: string): Promise<ProjectLookup | null> {
+    const p = this.projects.get(code);
+    if (!p) return null;
+    return {
+      code,
+      projectTitle: p.title,
+      schoolName: p.school,
+      nextMilestone: p.milestones.find((m) => !m.done)?.title ?? null,
+      done: p.milestones.filter((m) => m.done).length,
+      total: p.milestones.length,
+    };
+  }
+
+  async reportMilestone(report: MilestoneReport): Promise<void> {
+    const next = this.projects.get(report.code)?.milestones.find((m) => !m.done);
+    if (!next) throw new Error(`no pending milestone for ${report.code}`);
+    next.done = true;
+    next.photoPath = report.photo?.storagePath ?? null;
   }
 
   private lastSubmission(reporterId: string) {
