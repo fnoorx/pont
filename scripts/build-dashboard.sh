@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-# Builds the staff dashboard (dashboard/, synced from the Lovable repo cameroon-compass) as a static
-# single-page app into web/dashboard, so GitHub Pages serves it at https://fnoorx.github.io/ps43-bridge/dashboard/
-# next to the web chat. Run `npm run dashboard:sync` first to pick up the latest Lovable edits.
+# Builds the staff dashboard (dashboard/) as a static single-page app into web/dashboard, so GitHub Pages
+# serves it at https://fnoorx.github.io/ps43-bridge/dashboard/ next to the web chat.
 # The dashboard source is not changed: the Pages config is a temporary file, removed after the build.
 set -euo pipefail
 

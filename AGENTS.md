@@ -75,7 +75,7 @@ There are two codebases in this one repo. Supabase is the contract between them.
 | Root (`src`, `supabase`, `scripts`, `web`) | TypeScript, Supabase CLI | Database schema, views, seed data, conversation engine, web chat, CLI simulator |
 | `dashboard/` | Lovable (React + Supabase) | Staff dashboard UI only |
 
-`dashboard/` is a git subtree of the Lovable repo [cameroon-compass](https://github.com/Firetes675/cameroon-compass), which Lovable syncs two ways. Edit the dashboard in Lovable or in cameroon-compass, then run `npm run dashboard:sync` here. Don't edit `dashboard/` directly, or the next sync will conflict.
+`dashboard/` started as the Lovable project cameroon-compass (its history is kept here) and is now edited only in this repo. To publish it, run `npm run dashboard:build`, then commit `web/` and push.
 
 Rules:
 - **Schema:** This repo owns the database schema. The dashboard does not create or alter tables or views.
@@ -478,6 +478,5 @@ Lint and typecheck scripts are nice to have, not blockers.
 - Real WhatsApp Business API onboarding.
 - Payments or mobile money.
 - IVR or voice flows.
-- Dashboard UI changes made directly in `dashboard/` (make them in Lovable or cameroon-compass, then sync).
 
 B, C and D are mock data and simple rules only, except weekly attendance, which the bot collects for real (section 8). No real partner onboarding or project workflows.

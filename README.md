@@ -1,182 +1,81 @@
 # Pont
 
 Pont (French for "bridge") helps the PS43 Foundation find and respond to school needs in Cameroon.
-Field partners report a school's needs over WhatsApp or SMS. PS43 staff see them on a dashboard.
+Headteachers and local partners report a school's needs in a WhatsApp-style chat, in English or French.
+PS43 staff see every report on a dashboard that says who to help first, what to fund first, and who can deliver it.
 
-This repo owns the database (schema, views, security, seed data), the conversation engine,
-the web chat backend, a terminal simulator and, in [dashboard/](dashboard/), the staff dashboard
-(React, built in Lovable) that reads from this database. See [AGENTS.md](AGENTS.md) for the full design and rules, and
-[docs/DASHBOARD_CONTRACT.md](docs/DASHBOARD_CONTRACT.md) for what the dashboard can use.
+Team #30, PS43 Foundation challenge. A hackathon prototype on fictional data.
 
-## Setup
+## Try it
 
-You need Node 20.12 or newer and the [Supabase CLI](https://supabase.com/docs/guides/cli).
+- **Staff dashboard:** https://fnoorx.github.io/ps43-bridge/dashboard/ (needs the demo staff login, provided with the submission)
+- **Report a school (the chat):** https://fnoorx.github.io/ps43-bridge/ (no app or sign-up; on a laptop it opens a phone view with a QR code). Also linked from every dashboard page.
 
-1. Install dependencies:
+Send a report in the chat and it appears on the dashboard within 10 seconds.
 
-   ```sh
-   npm install
-   ```
+## How it works
 
-2. Log in to Supabase and link this repo to the project:
+| Step | What happens | In this prototype |
+|---|---|---|
+| **Report** | A headteacher or partner answers short numbered questions in the chat | Live |
+| **Assess** | Simple rules score readiness (building, power, signal, devices) and set what comes first: safe building, then power, then devices, then internet | Live |
+| **Match** | Partners and resources are matched to the first thing the school needs | Live rules on sample partners and resources |
+| **Deliver** | Partners report milestones from the chat (`DONE PJ-104` plus a photo); staff confirm them, and partners earn trust by delivering | Sample projects, live updates from the chat |
+| **Prove** | Headteachers send weekly attendance from the chat (`ATT 212 250` works by SMS) | Live counts next to sample history |
 
-   ```sh
-   supabase login
-   supabase link --project-ref <project-ref>
-   ```
+**Designed for the field**
+- **Chat first:** PS43 already coordinates over WhatsApp. No app to install, and messages wait for signal and send by themselves.
+- **Bilingual:** every message in English and French.
+- **Basic phones:** the same questions work over SMS as plain text.
+- **Privacy for conflict regions:** a consent step, nothing about students, locations rounded to about 11 km, and no map pins in the Northwest, Southwest or Far North. Staff see a reporter's role and the last 4 digits of their phone only.
+- **Low cost:** free tiers only (Supabase, GitHub Pages). Rules, not AI, so staff can explain every recommendation.
 
-3. Create your `.env` from the example and fill it in (Supabase dashboard > Project Settings > API):
+Why a web chat and not real WhatsApp? Twilio's and Meta's free tiers block it. The engine does not depend on the channel, so a WhatsApp Business number is a thin adapter in front of the same code.
 
-   ```sh
-   cp .env.example .env
-   ```
+## Pilot roadmap
 
-   `PHONE_HASH_SALT` should be a long random string. Do not change it once real data exists.
-   Never commit `.env`, and never share the service role key with the dashboard.
+**12 weeks, 10 schools, 3 local partners, in Littoral and Centre.** What we would validate:
+- Do partners and headteachers keep reporting from the chat?
+- Do PS43 staff agree with Pont's recommended first steps?
+- Does attendance rise after a funded first step?
 
-4. Apply the database migrations:
+A real pilot would add: a verified WhatsApp Business number and an SMS gateway, real partner onboarding with reference checks, school de-duplication, staff-created projects, voice notes, photo moderation, and automatic deletion of phone numbers and old sessions.
 
-   ```sh
-   npm run db:push
-   ```
+## Repo layout
 
-5. Load the demo data and create the demo staff login:
+```
+src/engine/      conversation engine: questions, bilingual copy, rules for each step
+src/webhook/     processes each message (shared by the web chat and the simulator)
+src/webchat/     web chat endpoint
+src/lib/         privacy helpers (phone hashing, coordinate rounding)
+supabase/        database schema, dashboard views and the web-chat Edge Function
+scripts/         seed data, contract check, terminal simulator
+web/             the chat page and the built dashboard (served by GitHub Pages)
+dashboard/       staff dashboard source (React + Supabase, first built in Lovable)
+docs/            what the dashboard reads from the database
+```
 
-   ```sh
-   npm run seed
-   ```
+[AGENTS.md](AGENTS.md) has the full design and rules.
 
-   This wipes app data (not regions) and reseeds, so it is safe to run again.
+## Run it yourself
 
-6. Check the dashboard contract end to end, using only the anon key:
+Needs Node 20.12+ and the [Supabase CLI](https://supabase.com/docs/guides/cli).
 
-   ```sh
-   npx tsx scripts/verify-contract.ts
-   ```
+```sh
+npm install
+supabase login && supabase link --project-ref <project-ref>
+cp .env.example .env              # fill in from Supabase > Project Settings > API
+npm run db:push                   # database schema and views
+npm run seed                      # fictional demo data and the demo staff login
+supabase secrets set PHONE_HASH_SALT=...   # same value as in .env
+npm run functions:deploy          # the web chat backend
+```
 
-7. In the Supabase dashboard, go to Authentication > Providers > Email and turn off
-   "Allow new users to sign up". Otherwise anyone with the anon key could create an account
-   and read the dashboard views. The verify script warns if this is still on.
-
-8. Deploy the web chat Edge Function. Supabase provides its own URL and service role key;
-   `PHONE_HASH_SALT` must be the same value as in `.env`:
-
-   ```sh
-   supabase secrets set PHONE_HASH_SALT=...
-   npm run functions:deploy
-   ```
-
-   Logs: Supabase dashboard > Edge Functions > web-chat > Logs.
-
-## Web chat (what judges use)
-
-`web/index.html` is a WhatsApp-style chat page. Judges scan a QR code and the bot greets them
-in under 2 seconds, with no app, sign-up or join code. It talks to the `web-chat` Edge Function,
-which runs the conversation engine against the real database, so reports appear on the
-dashboard live. Numbered answers become tappable buttons, and the + button sends a photo or
-location.
-
-**Live:** https://fnoorx.github.io/ps43-bridge/ (published from `web/` by GitHub Pages on every push
-that changes it, see `.github/workflows/pages.yml`).
-
-**Presentation view:** https://fnoorx.github.io/ps43-bridge/present.html shows the same live chat
-inside a black iPhone frame, with a QR code so judges can try it. On a laptop, the main link opens
-this view automatically (phones get the plain chat; add `?plain` to force the plain chat). Click
-the phone to drive the chat; "Restart chat" starts fresh and **P** hides the side panel. The chat
-is always light mode (add `?theme=dark` to the chat link for dark).
-To try it locally: `cd web && python3 -m http.server 8765` and open http://localhost:8765.
-
-Why not real WhatsApp for judges? Twilio's free trial blocks setting the sandbox webhook, and
-Meta's free test number only replies to 5 pre-registered phones. The engine is channel-agnostic
-(it already handles the SMS path, see `npm run simulate -- --sms`), so a real WhatsApp provider
-is a thin adapter in front of the same inbound processor.
-
-## Staff dashboard (live)
-
-**Live:** https://fnoorx.github.io/ps43-bridge/dashboard/ (sign in with the demo staff account,
-`DEMO_STAFF_EMAIL` / `DEMO_STAFF_PASSWORD`).
-
-The dashboard source is in [dashboard/](dashboard/). It is built and edited in Lovable, which syncs
-with [cameroon-compass](https://github.com/Firetes675/cameroon-compass); `dashboard/` is a copy of that
-repo with its full history. To publish the latest version:
-
-1. `npm run dashboard:sync` pulls the newest Lovable commits into `dashboard/`.
-2. `npm run dashboard:build` builds it as a static single-page app into `web/dashboard/` (plus
-   `web/404.html` so deep links work).
-3. Commit and push. The live copy only changes when you rebuild, so a teammate's edit in
-Lovable can't break the demo mid-judging.
-
-## Demo day checklist
-
-1. **Reset the data** (removes test submissions, reloads the fictional schools):
-   `npm run demo:reset` (same as `npm run seed`)
-2. **Open the presentation view** (link above). Its QR code opens the web chat directly.
-3. **Warm up the Edge Function** a minute before judging, so the first judge does not wait for a
-   cold start (about 2 seconds). Any request wakes it; this one is rejected harmlessly:
-   `curl -s -o /dev/null -X POST https://<project-ref>.supabase.co/functions/v1/web-chat`
-4. **Check the dashboard is logged in** and refreshing (it polls every few seconds).
-5. **Have a fallback:** `npm run simulate -- --live` on a laptop does the same flow without
-   a phone, and the report still appears on the dashboard.
-
-Timing: the server answers each message in about 0.6 seconds (17 replies, about 12 seconds in
-total). The 3-minute target is mostly reading and typing; skipping the optional note keeps it
-comfortable.
-
-## Prototype status
-
-This is a hackathon prototype built on fictional data.
-
-| Pipeline stage | In this prototype |
-|---|---|
-| Report | Real: WhatsApp-style chat bot (SMS path in the simulator), saved to Supabase, shown on the dashboard |
-| Assess | Real rules: `dashboard_readiness` scores every school live (Tier 0/1/2) |
-| Match | Real rules on mock partners: `dashboard_partner_matches` |
-| Deliver | Mock projects; partners report milestones from the chat (`DONE PJ-104` + photo), staff confirm them, and partners become Proven by delivering |
-| Prove | Real: headteachers send weekly attendance in the chat (or `ATT 212 250`), shown on the Impact page next to seeded history |
-
-## What a real pilot would add
-
-- **Verified partner onboarding:** real partner sign-up, reference checks and a referral workflow, instead of mock partners.
-- **Project management:** staff create projects, assign partners and approve milestone photos from the dashboard.
-- **School matching:** recognise when two reports are about the same school, instead of creating a new school each time.
-- **WhatsApp Business API and SMS:** a dedicated, verified WhatsApp number plus an SMS gateway, both feeding the same engine as the web chat.
-- **Message templates:** approved WhatsApp templates so PS43 can message reporters first (reminders, follow-ups).
-- **Voice notes:** transcription and translation of voice notes for staff.
-- **Media moderation:** check photos before staff see them, and enforce "building only, no people".
-- **Data retention:** automatic deletion of raw phone numbers and old sessions, plus a way for reporters to ask for deletion.
-- **Stronger privacy:** per-partner access rules, an audit trail of staff actions, and a reviewed list of sensitive regions.
-- **Operations:** monitoring and alerts on the Edge Function, retries for failed media downloads, and backups.
-- **Offline field tools:** printed QR posters and USSD for areas with no data at all.
-
-## Commands
+In Supabase, turn off "Allow new users to sign up" (Authentication > Providers > Email) so only the staff account can read the dashboard.
 
 | Command | What it does |
 |---|---|
-| `npm run test` | Unit tests (Vitest) |
-| `npm run lint` | ESLint |
-| `npm run typecheck` | TypeScript check |
-| `npm run seed` | Reset and seed demo data in the linked project |
-| `npm run verify` | Same as `npx tsx scripts/verify-contract.ts` |
-| `npm run db:push` | Apply migrations to the linked project |
-| `npm run simulate` | Chat with the bot in your terminal (`-- --live` saves to Supabase, `-- --sms` for SMS) |
-| `npm run functions:deploy` | Deploy the `web-chat` Edge Function |
-| `npm run demo:reset` | Reset to the fictional demo data before judging (alias of `seed`) |
-| `npm run dashboard:sync` | Pull the latest Lovable dashboard commits into `dashboard/` |
-| `npm run dashboard:build` | Build `dashboard/` into `web/dashboard/` for GitHub Pages |
-
-## Layout
-
-```
-src/lib/          privacy utilities (phone hashing, coordinate rounding)
-src/engine/       conversation engine: flow config, bilingual strings, parsing
-src/messaging/    inbound message types, SMS (GSM-7) helpers
-src/webhook/      inbound processor (shared by web chat and simulator) and Supabase store
-src/webchat/      web chat endpoint handler
-web/              WhatsApp-style web chat page and presentation view (static)
-dashboard/        staff dashboard source (React + Supabase, built in Lovable, synced from cameroon-compass)
-web/dashboard/    built copy of the staff dashboard (generated, see npm run dashboard:build)
-supabase/functions/  Edge Function entry point (web-chat)
-scripts/          seed, verify-contract, simulate
-supabase/         config and migrations
-docs/             dashboard contract
-```
+| `npm run test` | Unit tests |
+| `npm run simulate` | Chat with the bot in your terminal (`-- --sms` for the SMS path, `-- --live` to save to Supabase) |
+| `npm run demo:reset` | Reset to the fictional demo data |
+| `npm run dashboard:build` | Build the dashboard into `web/dashboard/` (then commit and push to publish) |
