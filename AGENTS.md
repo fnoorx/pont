@@ -68,7 +68,7 @@ There are two codebases. Supabase is the contract between them.
 
 Rules:
 - **Schema:** This repo owns the database schema. The dashboard does not create or alter tables or views.
-- **Access:** The dashboard reads from the `dashboard_*` views (section 7) and may call `set_assessment_verified`.
+- **Access:** The dashboard reads from the `dashboard_*` views (section 7) and may call `set_assessment_verified` and `set_milestone_verified`.
 - **Changing the contract:** If you change a view column or value set, update section 7 and `docs/DASHBOARD_CONTRACT.md`, and tell your teammate.
 
 ## 3. Why WhatsApp
@@ -364,7 +364,10 @@ Dependency rules (infrastructure is a chain: safe building → power → devices
 
 ### RPC
 - `set_assessment_verified(assessment_id uuid, verified boolean) returns void`
-- Callable by `authenticated`.
+- `set_milestone_verified(milestone_id uuid, verified boolean) returns void`: confirms a done milestone. When every milestone of a project is done and verified, the project becomes `completed` and its partner gains a delivered project and becomes `proven` (trust earned by delivery).
+- Both callable by `authenticated`.
+
+Partners report milestones from the chat: `DONE PJ-104` (or `FAIT`) plus a photo marks the project's next pending milestone done and unverified (`reported_via_chat` true). Projects have a short `code` for this. The webhook uses the internal RPCs `find_project_for_milestone` and `report_milestone` (service role only).
 
 ### Storage
 - Private bucket `field-media`.

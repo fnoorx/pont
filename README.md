@@ -116,7 +116,7 @@ This is a hackathon prototype built on fictional data.
 | Report | Real: WhatsApp-style chat bot (SMS path in the simulator), saved to Supabase, shown on the dashboard |
 | Assess | Real rules: `dashboard_readiness` scores every school live (Tier 0/1/2) |
 | Match | Real rules on mock partners: `dashboard_partner_matches` |
-| Deliver | Mock projects and photo milestones |
+| Deliver | Mock projects; partners report milestones from the chat (`DONE PJ-104` + photo), staff confirm them, and partners become Proven by delivering |
 | Prove | Real: headteachers send weekly attendance in the chat (or `ATT 212 250`), shown on the Impact page next to seeded history |
 
 ## What a real pilot would add

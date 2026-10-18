@@ -6,7 +6,7 @@ The database lives in the `ps43-pont` repo. This document is the agreement betwe
 **The short version:**
 
 - Read only from the `dashboard_*` views: the 4 core views (section 2) and the 8 pipeline views (section 9). Nothing else.
-- The only write is the `set_assessment_verified` RPC.
+- The writes are the `set_assessment_verified` and `set_milestone_verified` RPCs.
 - Never create, alter or drop tables, views, policies or functions from the dashboard. If Lovable offers to run a SQL migration, decline it and ask in the team chat instead.
 - Users must be signed in. Signed-out (anon) requests get a permission error on everything.
 
@@ -242,6 +242,21 @@ const { error } = await supabase.rpc("set_assessment_verified", {
 - Returns nothing on success.
 - Errors if the id does not exist, or if the user is not signed in.
 - After calling it, re-fetch the affected rows. `dashboard_schools.verified` reflects the school's latest report only.
+
+### Second write: `set_milestone_verified`
+
+Staff confirm a milestone that is `done` (often one a partner reported from the chat with `DONE PJ-104` and a photo).
+
+```ts
+const { error } = await supabase.rpc("set_milestone_verified", {
+  milestone_id: "<dashboard_milestones.id>",
+  verified: true,
+});
+```
+
+- Errors if the milestone does not exist or is not `done`.
+- When every milestone of the project is done and verified, the project becomes `completed` and its partner gains one delivered project and becomes `proven`. Re-fetch projects, milestones and partners afterwards.
+- New columns, appended at the end of their views: `dashboard_projects.code` (e.g. `PJ-104`, what partners send from the chat) and `dashboard_milestones.reported_via_chat` (true when a partner reported it from the chat).
 
 ---
 
