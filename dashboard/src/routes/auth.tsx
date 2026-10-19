@@ -82,7 +82,7 @@ function Login() {
             {busy ? "Signing in…" : "Sign in"}
           </Button>
           <Button variant="link" asChild className="mt-3 w-full text-info"><Link to="/dashboard">Operations demo workspace</Link></Button>
-          <a href={CHAT_URL} target="_blank" rel="noreferrer"
+          <a href={CHAT_URL}
             className="mt-4 block rounded-md border border-primary/30 bg-primary/5 px-4 py-3 text-center text-sm font-medium text-primary hover:bg-primary/10">
             No account? Try the WhatsApp chat that schools use to report
           </a>

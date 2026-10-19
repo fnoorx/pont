@@ -421,7 +421,7 @@ A returning reporter who has reported a school gets a home menu: 1 Report a scho
 
 ### Web chat (judge demo)
 
-Twilio's free trial no longer lets us point the WhatsApp sandbox at our webhook, and we are not paying for anything. So judges use a **WhatsApp-style web chat** (`web/index.html`) opened from a QR code: no app, no join step, greeting in under 2 seconds. It calls the `web-chat` Edge Function, which runs the conversation engine against the real database. Web reporters have no phone number: they are identified by a salted hash of a random browser id, and `phone_e164` / `phone_last4` are NULL. Numbered options are shown as tappable buttons.
+Twilio's free trial no longer lets us point the WhatsApp sandbox at our webhook, and we are not paying for anything. So judges use a **WhatsApp-style web chat** (`web/chat/index.html`, linked from the dashboard and back) opened from a QR code: no app, no join step, greeting in under 2 seconds. It calls the `web-chat` Edge Function, which runs the conversation engine against the real database. Web reporters have no phone number: they are identified by a salted hash of a random browser id, and `phone_e164` / `phone_last4` are NULL. Numbered options are shown as tappable buttons.
 
 ## 9. Architecture (keep it light)
 

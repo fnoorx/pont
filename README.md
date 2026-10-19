@@ -8,8 +8,8 @@ Team #30, PS43 Foundation challenge. A hackathon prototype on fictional data.
 
 ## Try it
 
-- **Staff dashboard:** https://fnoorx.github.io/pont/dashboard/ (opens straight in: the published demo signs in with a demo staff account)
-- **Report a school (the chat):** https://fnoorx.github.io/pont/ (no app or sign-up; on a laptop it opens a phone view with a QR code). Also linked from every dashboard page.
+- **Staff dashboard:** https://fnoorx.github.io/pont/ (the home page; opens straight in: the published demo signs in with a demo staff account)
+- **Report a school (the chat):** https://fnoorx.github.io/pont/chat/ (no app or sign-up; on a laptop it opens a phone view with a QR code). Linked from every dashboard page, and its back arrow returns to the dashboard.
 
 Send a report in the chat and it appears on the dashboard within 10 seconds.
 
