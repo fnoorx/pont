@@ -50,7 +50,7 @@ src/webchat/     web chat endpoint
 src/lib/         privacy helpers (phone hashing, coordinate rounding)
 supabase/        database schema, dashboard views and the web-chat Edge Function
 scripts/         seed data, contract check, terminal simulator
-web/             the chat page and the built dashboard (served by GitHub Pages)
+web/             the site on GitHub Pages: home (opens the dashboard), chat/, and the built dashboard/
 dashboard/       staff dashboard source (React + Supabase, first built in Lovable)
 docs/            what the dashboard reads from the database
 ```

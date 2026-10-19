@@ -1,4 +1,4 @@
-# Publishes the WhatsApp-style web chat (web/) to GitHub Pages.
+# Publishes the Pont site (web/) to GitHub Pages: the home page, the chat (web/chat/) and the built dashboard.
 name: Deploy web chat
 
 on:
