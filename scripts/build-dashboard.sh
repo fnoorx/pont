@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Builds the staff dashboard (dashboard/) as a static single-page app into web/dashboard, so GitHub Pages
-# serves it at https://fnoorx.github.io/ps43-bridge/dashboard/ next to the web chat.
+# serves it at https://fnoorx.github.io/pont/dashboard/ next to the web chat.
 # The dashboard source is not changed: the Pages config is a temporary file, removed after the build.
 # The demo staff login from .env is built in, so visitors skip the sign-in screen.
 set -euo pipefail
@@ -16,7 +16,7 @@ cat > vite.pages.config.ts <<'EOF'
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 export default defineConfig({
   nitro: false,
-  vite: { base: "/ps43-bridge/dashboard/" },
+  vite: { base: "/pont/dashboard/" },
   tanstackStart: { server: { entry: "server" }, spa: { enabled: true } },
 });
 EOF

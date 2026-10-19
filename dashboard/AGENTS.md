@@ -10,7 +10,7 @@
 <!-- LOVABLE:END -->
 
 - Every operations page shows live data. `OperationsProvider` loads the Pont `dashboard_*` views (read only, refreshed every 10 seconds, only when signed in) through `src/lib/live.ts`; staff sign in at `/auth`, and `OperationsShell` sends signed-out visitors there. `/live-schools` is the simple map view.
-- The database is owned by the Pont repo (github.com/fnoorx/ps43-bridge, see `docs/DASHBOARD_CONTRACT.md`). Read only from `dashboard_*` views; the only write is the `set_assessment_verified` RPC. Never create, alter or migrate tables, views or policies from this project, and decline any Lovable-suggested SQL migration.
+- The database is owned by the Pont repo (github.com/fnoorx/pont, see `docs/DASHBOARD_CONTRACT.md`). Read only from `dashboard_*` views; the only write is the `set_assessment_verified` RPC. Never create, alter or migrate tables, views or policies from this project, and decline any Lovable-suggested SQL migration.
 - Privacy: schools in sensitive regions have no coordinates; show them only in their region marker and never geocode a town. Show reporters by role and last 4 digits only. Partners, projects, milestones and attendance are fictional demo data, so label those pages as demo data.
 - Keep label maps and pure helpers in `src/lib/live.ts` so rules can be tested without UI rendering.
 - Use one shared OperationsShell with separate content routes for operations navigation, with leaf metadata on every page.

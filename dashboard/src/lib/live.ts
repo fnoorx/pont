@@ -1,4 +1,4 @@
-// Live data from the Pont database (repo: github.com/fnoorx/ps43-bridge).
+// Live data from the Pont database (repo: github.com/fnoorx/pont).
 // Read only from the dashboard_* views, plus the one write: set_assessment_verified.
 // Column names and value sets follow docs/DASHBOARD_CONTRACT.md in that repo.
 import { db, parseDisplayDate } from "@/lib/ps43";
@@ -364,7 +364,7 @@ export function fmtDate(iso: string | null | undefined): string {
 export const REFRESH_MS = 10_000;
 
 /** The public WhatsApp-style chat where schools report. Laptops get the phone view with a QR code. */
-export const CHAT_URL = "https://fnoorx.github.io/ps43-bridge/";
+export const CHAT_URL = "https://fnoorx.github.io/pont/";
 
 export async function fetchView<T>(view: string): Promise<T[]> {
   const { data, error } = await db().from(view).select("*");
